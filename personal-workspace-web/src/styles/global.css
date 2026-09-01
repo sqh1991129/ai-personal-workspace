@@ -1,0 +1,64 @@
+:root {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-text: #1f2329;
+  --color-muted: #6b7280;
+  --color-border: #e4e7ec;
+  --color-accent: #42b983;
+  --color-danger: #d92d20;
+  --color-warning: #b54708;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #16181d;
+  --color-surface: #1f2329;
+  --color-text: #eef0f3;
+  --color-muted: #9aa2af;
+  --color-border: #31363f;
+  --color-accent: #35b98a;
+  --color-danger: #f97066;
+  --color-warning: #fdb022;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: Avenir, Helvetica, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}

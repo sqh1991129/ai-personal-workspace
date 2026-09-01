@@ -1,0 +1,188 @@
+{
+  "profile": "personal-workspace-web/project-profile",
+  "profileVersion": 2,
+  "updatedAt": "2026-09-01",
+  "phase": "P0-done",
+  "humanAnalysis": "docs/PROJECT_ANALYSIS.md",
+  "agentInstructions": "AGENTS.md",
+  "meta": {
+    "baseCommit": "4246f4f",
+    "branch": "main",
+    "workingTreeAtAnalysis": "clean",
+    "gitRepoRoot": "/Users/sunquanhu/Projects/study/ai/personal-workspace",
+    "projectRoot": "/Users/sunquanhu/Projects/study/ai/personal-workspace/personal-workspace-web",
+    "remote": "git@github.com:sqh1991129/ai-personal-workspace.git"
+  },
+  "project": {
+    "name": "personal-workspace-web",
+    "version": "0.1.0",
+    "private": true,
+    "purpose": "个人 AI 工作台（前端）",
+    "kind": "vue3-spa",
+    "packageManager": "npm",
+    "lockfileVersion": 3,
+    "maturity": "infra-ready-no-business-features",
+    "businessFeaturesImplemented": []
+  },
+  "runtime": {
+    "node": "v25.7.0",
+    "npm": "11.10.1",
+    "enginesDeclared": false
+  },
+  "dependencies": {
+    "runtime": {
+      "vue": "3.5.42",
+      "vue-router": "4.6.4",
+      "pinia": "2.3.1",
+      "axios": "1.20.0",
+      "core-js": "3.50.0"
+    },
+    "dev": {
+      "@vue/cli-service": "5.0.9",
+      "@vue/cli-plugin-babel": "5.0.9",
+      "@vue/cli-plugin-eslint": "5.0.9",
+      "eslint": "7.32.0",
+      "eslint-plugin-vue": "8.7.1",
+      "eslint-webpack-plugin": "3.2.0",
+      "webpack": "5.110.2",
+      "webpack-dev-server": "4.15.2",
+      "babel-loader": "8.4.1",
+      "vue-loader": "17.4.2",
+      "postcss": "8.5.26",
+      "html-webpack-plugin": "5.6.8"
+    }
+  },
+  "stack": {
+    "apiStyle": "script-setup-composition",
+    "language": "javascript",
+    "typescript": false,
+    "cssStrategy": "plain css + css variable tokens + scoped styles",
+    "preprocessor": null,
+    "uiLibrary": null,
+    "router": { "module": "src/router/index.js", "mode": "history", "lazyLoading": true, "titleFromMeta": true },
+    "state": { "module": "src/stores/app.js", "persisted": ["workspace.theme"] },
+    "http": {
+      "module": "src/api/http.js",
+      "baseUrlEnv": "VUE_APP_API_BASE",
+      "timeoutEnv": "VUE_APP_API_TIMEOUT",
+      "unwrapsResponseData": true,
+      "errorType": "ApiError",
+      "errorCodes": ["CANCELED", "TIMEOUT", "NETWORK", "HTTP_ERROR", "UNKNOWN"],
+      "requestIdHeader": "X-Request-Id"
+    },
+    "lint": {
+      "extends": ["plugin:vue/vue3-essential", "eslint:recommended"],
+      "env": ["node", "browser", "es2021", "vue/setup-compiler-macros"],
+      "customRules": {},
+      "prettier": false,
+      "notes": [
+        "ESLint 7 不支持 env es2022，会直接报错",
+        "eslint-plugin-vue@8 需显式声明 vue/setup-compiler-macros，升级到 v9 后需移除"
+      ]
+    }
+  },
+  "absent": ["uiLibrary", "preprocessor", "unitTest", "e2eTest", "ci", "docker", "gitHooks", "i18n", "auth", "streamingClient", "errorTracking", "brandAssets"],
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "config": {
+    "vue.config.js": {
+      "transpileDependencies": true,
+      "productionSourceMap": false,
+      "pages.index": { "entry": "src/main.js", "template": "public/index.html", "filename": "index.html", "title": "<VUE_APP_TITLE>" },
+      "devServer": { "port": "<VUE_APP_DEV_PORT|8080>", "proxy": { "/api": { "target": "<VUE_APP_API_PROXY_TARGET>", "changeOrigin": true } } }
+    },
+    "envFiles": [".env.development", ".env.production"],
+    "envKeys": {
+      "VUE_APP_TITLE": "个人 AI 工作台",
+      "VUE_APP_API_BASE": "/api",
+      "VUE_APP_API_TIMEOUT": "15000",
+      "VUE_APP_DEV_PORT": "8080 (development only)",
+      "VUE_APP_API_PROXY_TARGET": "http://127.0.0.1:8000 (development only)"
+    },
+    "alias": { "@": "src" },
+    "browserslist": ["> 1%", "last 2 versions", "not dead", "not ie 11"],
+    "differentialLoading": false,
+    "jsconfigTarget": "es5",
+    "jsconfigTargetConflictsBrowserslist": true
+  },
+  "structure": {
+    "root": ["AGENTS.md", "README.md", "package.json", "package-lock.json", "vue.config.js", "babel.config.js", "jsconfig.json", ".env.development", ".env.production", ".gitignore", "docs", "public", "src"],
+    "public": ["index.html", "favicon.ico"],
+    "src": {
+      "files": [
+        "src/main.js",
+        "src/App.vue",
+        "src/router/index.js",
+        "src/stores/app.js",
+        "src/api/http.js",
+        "src/api/workspace.js",
+        "src/views/HomeView.vue",
+        "src/views/NotFoundView.vue",
+        "src/components/base/StatusPill.vue",
+        "src/styles/global.css",
+        "src/assets/logo.png"
+      ],
+      "unreferencedAssets": ["src/assets/logo.png"],
+      "directories": ["src/router", "src/stores", "src/api", "src/views", "src/components/base", "src/styles", "src/assets"],
+      "notYetCreated": ["src/composables", "src/components/business", "src/utils", "src/constants"]
+    },
+    "sibling": [{ "path": "personal-workspace-app/index.py", "state": "empty-file", "note": "后端占位，接口契约仍未定义" }]
+  },
+  "verified": {
+    "lintPassed": true,
+    "buildPassed": true,
+    "devServerBooted": true,
+    "headlessRenderChecked": true,
+    "buildTimeMs": 9036,
+    "artifacts": [
+      { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 196.45, "gzipKiB": 70.22 },
+      { "file": "dist/js/index.*.js", "sizeKiB": 11.08, "gzipKiB": 5.14 },
+      { "file": "dist/js/745.*.js", "sizeKiB": 0.72, "gzipKiB": 0.49, "note": "NotFoundView 懒加载 chunk" },
+      { "file": "dist/css/index.*.css", "sizeKiB": 3.96, "gzipKiB": 1.23 }
+    ],
+    "sourceMapsEmitted": false,
+    "lazyChunkPresent": true,
+    "htmlChecks": { "lang": "zh-CN", "title": "个人 AI 工作台", "placeholderTextRemoved": true },
+    "devServerProbes": {
+      "GET /": 200,
+      "GET /api/health": "500 Proxy error ECONNREFUSED (proxy wired, backend absent)"
+    }
+  },
+  "issues": [
+    { "id": "R1", "priority": "P0", "status": "resolved", "path": "README.md", "problem": "未解决的合并冲突标记已提交进 main", "resolution": "重写为真实项目说明" },
+    { "id": "R2", "priority": "P0", "status": "resolved", "path": "public/index.html", "problem": "残留 sdfds、lang 为空、标题为包名", "resolution": "清理并接入 VUE_APP_TITLE" },
+    { "id": "R3", "priority": "P0", "status": "resolved", "path": "src/router", "problem": "无路由", "resolution": "vue-router 4 + 懒加载 + 404 视图" },
+    { "id": "R4", "priority": "P1", "status": "resolved", "path": "src/stores", "problem": "无状态管理", "resolution": "pinia + app store（主题/侧栏）" },
+    { "id": "R5", "priority": "P1", "status": "resolved", "path": "src/api", "problem": "无请求层与环境配置", "resolution": "axios 实例 + .env.* + devServer 代理" },
+    { "id": "R9", "priority": "P2", "status": "resolved", "path": "vue.config.js", "problem": "生产 source map 默认外泄", "resolution": "productionSourceMap: false" },
+    { "id": "R6", "priority": "P1", "status": "open", "path": "src/api", "problem": "AI 流式响应（SSE / fetch stream）封装缺失", "next": "在 api 层实现流式客户端，经 composables 暴露" },
+    { "id": "R10", "priority": "P1", "status": "open", "path": "personal-workspace-app", "problem": "后端 index.py 为空，接口契约未定义，前端会话/对话功能无法联调", "next": "先定义 /api/health 与聊天接口契约（含流式协议）" },
+    { "id": "R7", "priority": "P2", "status": "open", "path": "package.json", "problem": "无 UI 组件库；sidebarCollapsed 尚无消费方；缺布局壳与品牌资源", "next": "确认 element-plus 或自研，补侧栏布局与 favicon/logo" },
+    { "id": "R8", "priority": "P2", "status": "open", "path": "repo", "problem": "无测试、无 CI、无 git hooks、无 engines", "next": "vitest + @vue/test-utils，CI 跑 lint+build，声明 engines" },
+    { "id": "R11", "priority": "P3", "status": "open", "path": "jsconfig.json", "problem": "target es5 与 browserslist not ie 11 不一致", "next": "改为 es2020 级别并对齐 lib" }
+  ],
+  "conventions": {
+    "component": ["SFC 三段式", "<script setup> + Composition API（新代码）", "PascalCase 组件名", "一文件一组件", "<style scoped> + 令牌变量"],
+    "imports": ["使用 @/ 别名引用 src 内模块"],
+    "branch": "codex/<task-slug>",
+    "preCommit": ["npm run lint", "npm run build"],
+    "rules": [
+      "后端地址与开关只从 process.env.VUE_APP_* 读取",
+      "网络调用只出现在 src/api/**，组件经 src/composables/** 使用",
+      "views 路由组件懒加载（首页可同步引入）",
+      "components/base 不依赖 store 与 api",
+      "新增环境变量需同步 .env.* 与 README 变量表",
+      "新增依赖需同步 docs/PROJECT_ANALYSIS.md 与本档案"
+    ]
+  },
+  "roadmap": [
+    { "phase": "P0", "name": "基建", "status": "done", "delivered": ["清理 R1/R2", "vue-router", "pinia", "axios + env + 代理", "productionSourceMap:false", "404 页", "AGENTS.md"] },
+    { "phase": "P1", "name": "骨架", "status": "pending", "tasks": ["侧栏 + 内容区布局壳", "主题令牌扩展", "品牌资源与 favicon", "后端接口契约"] },
+    { "phase": "P2", "name": "主流程", "status": "pending", "tasks": ["会话列表", "对话页", "Markdown/代码块渲染", "打通聊天接口"] },
+    { "phase": "P3", "name": "体验", "status": "pending", "tasks": ["流式输出", "中断/重试", "消息持久化", "长列表虚拟化", "快捷键"] },
+    { "phase": "P4", "name": "工程化", "status": "pending", "tasks": ["vitest 单测", "收紧 lint 规则", "CI 构建产物", "engines 声明"] }
+  ]
+}
