@@ -31,12 +31,14 @@
 | Polyfill | core-js | 3.50.0 | usage 模式，依赖 browserslist |
 | CSS 处理 | postcss | 8.5.26 | 自动前缀，无 postcss.config.js |
 | HTML 模板 | html-webpack-plugin | 5.6.8 | 读取 `public/index.html` |
-| Lint | eslint + eslint-plugin-vue + eslint-webpack-plugin | 7.32.0 / 8.7.1 / 3.2.0 | env 已补 `browser`、`es2021`、`vue/setup-compiler-macros` |
-| 语言 | JavaScript | — | **无 TypeScript**，无 tsconfig |
+| Lint | eslint + eslint-plugin-vue + eslint-webpack-plugin + @typescript-eslint | 7.32.0 / 8.7.1 / 3.2.0 / 5.62.0 | env 已补 `browser`、`es2021`、`vue/setup-compiler-macros`；解析器 `vue-eslint-parser` + `@typescript-eslint/parser` |
+| 语言 | TypeScript | 5.4.5 | `tsconfig.json`（`strict` + `noUnusedLocals`），`src/**` 全量 `.ts`；仅 `vue.config.js`/`babel.config.js`/`demo/**` 保留 JS |
+| TS 转译 | ts-loader | 9.6.2 | `transpileOnly` + `appendTsSuffixTo: [/\.vue$/]`，配在 `vue.config.js` 的 `rule('ts')`；**未使用 @vue/cli-plugin-typescript**（见 11 节） |
+| TS 检查 | vue-tsc | 1.8.27 | `npm run type-check`，已串进 `npm run build` |
 | 样式语言 | 纯 CSS | — | **无 sass/less/stylus** |
-| 路由 | vue-router | 4.6.4 | `src/router/index.js`，history 模式 + 懒加载 + 文档标题 |
-| 状态管理 | pinia | 2.3.1 | `src/stores/app.js`（主题、侧栏），主题写入 localStorage |
-| HTTP 客户端 | axios | 1.20.0 | `src/api/http.js` 统一实例，含超时/请求 ID/错误归一化 |
+| 路由 | vue-router | 4.6.4 | `src/router/index.ts`，history 模式 + 懒加载 + 文档标题（`RouteMeta` 已做类型增强） |
+| 状态管理 | pinia | 2.3.1 | `src/stores/app.ts`（主题、侧栏），主题写入 localStorage |
+| HTTP 客户端 | axios | 1.20.0 | `src/api/http.ts` 统一实例，含超时/请求 ID/错误归一化 + 类型守卫 |
 | 组件库 | 缺失 | — | 无 element-plus / ant-design-vue 等 |
 | 单元测试 | 缺失 | — | 无 jest / vitest / @vue/test-utils |
 | CI/CD | 缺失 | — | 无 .github/workflows、无 Dockerfile、无部署脚本 |
@@ -109,8 +111,10 @@ personal-workspace/                     # Git 仓库根
 - 单文件组件（SFC）三段式：`<template>` / `<script>` / `<style>`；`HelloWorld.vue` 使用 `<style scoped>`，`App.vue` 使用全局样式。
 - 组件写法为 **Options API**（`export default { name, components, props }`），不是 `<script setup>`。
 - 组件名 PascalCase、一个文件一个组件、目录无 `index.js` 聚合导出。
-- 路径别名 `@/` → `src/`：运行时由 vue-cli 内置提供，IDE 跳转由 `jsconfig.json` 的 `paths` 提供（两处需保持一致）。
-- ESLint 规则集：`plugin:vue/vue3-essential` + `eslint:recommended`，`rules` 为空对象，即**无团队自定义约束**（未强制属性命名顺序、未限制 `v-html`、未限制组件复杂度）。
+- 路径别名 `@/` → `src/`：运行时由 vue-cli 内置提供（`resolve.alias`），类型侧由 `tsconfig.json` 的 `paths` 提供（两处需保持一致）；`resolve.extensions` 另需包含 `.ts`，见 `vue.config.js`。
+- ESLint 规则集：`plugin:vue/vue3-essential` + `eslint:recommended`，外加 `overrides`（`*.ts`/`*.tsx`/`*.vue`）里的 `@typescript-eslint` 规则：禁 `any`、强制 `import type`、替换版 `no-unused-vars`，并关掉 TS 下会误报的 `no-undef`/`no-unused-vars`。
+  仍未强制属性命名顺序、未限制 `v-html`、未限制组件复杂度（`eslint-plugin-vue` 的强规则集与 Prettier 留给 P4）。
+- 共享类型放 `src/types/`；`process.env.VUE_APP_*` 在 `src/types/env.d.ts` 里声明，新增变量三处同步（`.env.*`、`env.d.ts`、README 变量表）。
 - 无 Prettier、无 `.editorconfig`、无 git hooks（husky/lint-staged）、无 commit message 规范。
 - 若后续引入 `eslint-plugin-vue@9` + Prettier，需先把 ESLint 从 7.32 升级到 8.x，否则 peer 依赖不兼容。
 
@@ -121,12 +125,13 @@ personal-workspace/                     # Git 仓库根
 1. ✅ **已处理** · README.md 含未解决的合并冲突标记（`<<<<<<< HEAD` / `=======` / `>>>>>>> 905e4f6...`），已重写为真实项目说明。
 2. ✅ **已处理** · `public/index.html` 残留 `<div id="app">sdfds</div>`、`lang=""`、默认包名标题；现为 `lang="zh-CN"` + `VUE_APP_TITLE` 驱动的标题。
 3. ✅ **已处理** · 无路由；已引入 vue-router 4，含首页与 404 视图。
-4. ✅ **已处理** · 无状态管理；已引入 pinia，落地 `src/stores/app.js`（主题 + 侧栏折叠）。
+4. ✅ **已处理** · 无状态管理；已引入 pinia，落地 `src/stores/app.ts`（主题 + 侧栏折叠）。
 5. ✅ **已处理（前端侧）** · 无请求层与环境配置；已引入 axios 统一实例、`.env.*`、devServer `/api` 代理。**仍缺后端接口契约**（`index.py` 依旧为空）。
 6. **P1 · AI 流式响应方案未定**：需为 SSE / fetch stream 预留统一封装，不能把流式逻辑散进组件。
 7. **P2 · 无 UI 体系**：未选定组件库与设计令牌（颜色/间距/暗色主题），后补会引发全站返工。
 8. **P2 · 无测试、无 CI**：目前唯一"通过"信号是构建成功，无法保证重构安全。
-9. ⚠️ **部分处理** · 已补 404 页面与主题令牌；仍未声明 `engines`，`jsconfig.json` 的 `target: es5` 与 browserslist（`not ie 11`）不一致，无品牌资源（`favicon.ico` 仍是 Vue 默认）。
+9. ⚠️ **部分处理** · 已补 404 页面与主题令牌；原 `jsconfig.json` 的 `target: es5` 与 browserslist（`not ie 11`）不一致，已随 TS 迁移删除该文件、由 `tsconfig.json`（`target: esnext`）取代（R11 关闭）。仍未声明 `engines`，无品牌资源（`favicon.ico` 仍是 Vue 默认）。
+10. ✅ **已处理**（2026-09-02） · 语言层无类型约束；已全量迁移到 TypeScript 5.4，详见第 11 节。
 
 ---
 
@@ -136,14 +141,15 @@ personal-workspace/                     # Git 仓库根
 
 ```text
 src/
-├── main.js                     # 装配 router / pinia / 全局样式
+├── main.ts                     # 装配 router / pinia / 全局样式
 ├── App.vue                     # 仅保留 <router-view> + 全局布局壳
 ├── router/
-│   └── index.js                # 路由表，视图组件一律 () => import() 懒加载
+│   └── index.ts                # 路由表，视图组件一律 () => import() 懒加载
 ├── stores/                     # pinia：conversation / user / settings / ui
 ├── api/                        # 唯一的后端调用出口
-│   ├── http.js                 # axios 实例 + 拦截器 + baseURL 取自 env
-│   └── chat.js                 # 含 SSE 流式封装
+│   ├── http.ts                 # axios 实例 + 拦截器 + baseURL 取自 env
+│   └── chat.ts                 # 含 SSE 流式封装
+├── types/                      # 共享类型与 process.env 声明（迁移 TS 时新增）
 ├── views/                      # 路由级页面（懒加载入口）
 ├── components/
 │   ├── base/                   # 通用无业务 UI 原子件
@@ -161,15 +167,15 @@ vue.config.js                   # 增加 devServer.proxy、productionSourceMap:f
 
 | 能力 | 建议 | 理由 | 落地方式 |
 | --- | --- | --- | --- |
-| 路由 | vue-router@4 | Vue 3 官方配套 | `vue add router`（@vue/cli-plugin-router 5.0.x）或 `npm i vue-router@4` 后手工建 `src/router/index.js` |
+| 路由 | vue-router@4 | Vue 3 官方配套 | `vue add router`（@vue/cli-plugin-router 5.0.x）或 `npm i vue-router@4` 后手工建 `src/router/index.ts` |
 | 状态 | pinia@2 | Vue 3 推荐、无 mutation 冗余 | `npm i pinia`，无官方 CLI 插件，需手工装配 |
-| 请求 | axios@1 | 拦截器/取消/超时成熟 | `npm i axios`，实例统一放 `src/api/http.js` |
+| 请求 | axios@1 | 拦截器/取消/超时成熟 | `npm i axios`，实例统一放 `src/api/http.ts` |
 | 流式 | 自研 fetch + ReadableStream | 原生 EventSource 不支持 POST 与自定义 header，AI 接口通常需要 | 封装在 `src/api/`，经 composable 暴露给视图 |
 | UI 库 | element-plus@2（或坚持自研） | 生态成熟、中文文档全 | webpack5 下按需引入用 unplugin-vue-components 的 webpack 版；关注首包 |
 | 样式 | sass + CSS 变量令牌 | 主题/暗色切换成本最低 | `npm i -D sass`，`styles/tokens.css` 定义 `--color-*` |
 | 测试 | vitest + @vue/test-utils@2 | 与 webpack 主链路解耦，接入成本低于改造 jest | 新增 `vitest.config.js`，不动 build 链路 |
 | 规范 | prettier + eslint-plugin-vue@9 + husky/lint-staged | 现有规则集过弱，多人协作会漂移 | 前置条件：ESLint 升级到 8.x |
-| 类型 | 暂不引入 TypeScript | 当前 0 业务代码，先补功能 | 需要时再上 @vue/cli-plugin-typescript 5.0.x |
+| 类型 | **已引入 TypeScript 5.4**（2026-09-02，原建议为「暂不引入」） | 业务代码即将铺开，类型契约越早定越省成本 | 未走 @vue/cli-plugin-typescript（peer 冲突），改用 ts-loader + vue-tsc，详见第 11 节 |
 | 部署 | Nginx 静态托管 `dist/` | SPA 需 fallback 到 index.html | 后续补 CI 构建与发布脚本 |
 
 ### 7.3 分期路线
@@ -186,7 +192,7 @@ vue.config.js                   # 增加 devServer.proxy、productionSourceMap:f
 
 **分支与提交**
 - 新功能分支使用 `codex/<task-slug>` 前缀；`main` 只接受可构建的提交。
-- 提交前必须通过 `npm run lint` 与 `npm run build`。
+- 提交前必须通过 `npm run lint`、`npm run type-check` 与 `npm run build`。
 
 **代码放置规则**
 - 后端地址、模型 ID、开关等只允许来自 `process.env.VUE_APP_*`，禁止组件内硬编码。
@@ -196,7 +202,7 @@ vue.config.js                   # 增加 devServer.proxy、productionSourceMap:f
 
 **每个任务的交付清单**
 1. 需求 → 影响的文件/模块清单；
-2. 实现代码（遵循第 5 节风格）；
+2. 实现代码（遵循第 5 节风格，`src/**` 一律 TypeScript）；
 3. 自检证据：lint 通过、build 通过、手动验证路径描述；
 4. 文档更新：本文档 + `docs/project-profile.json`，必要时新增接口契约文档。
 
@@ -208,8 +214,9 @@ vue.config.js                   # 增加 devServer.proxy、productionSourceMap:f
 cd personal-workspace-web
 npm install                 # 已存在 node_modules（574 个包目录 / 191 MB）
 npm run serve               # http://localhost:8080
-npm run build               # 产物在 dist/
-npm run lint                # ESLint 检查
+npm run type-check          # vue-tsc 类型检查
+npm run build               # 先类型检查，再构建，产物在 dist/
+npm run lint                # ESLint 检查（含 .ts/.tsx/.vue）
 ```
 
 分析过程产生的 `dist/` 属于构建产物，已在 `.gitignore` 中，不会进入版本库。
@@ -247,18 +254,22 @@ npm run lint                # ESLint 检查
 
 ```text
 src/
-├── main.js
+├── main.ts
 ├── App.vue
-├── router/index.js
-├── stores/app.js
-├── api/http.js
-├── api/workspace.js
+├── router/index.ts
+├── stores/app.ts
+├── api/http.ts
+├── api/workspace.ts
+├── types/ui.ts            # 共享联合类型（StatusState）
+├── types/env.d.ts         # process.env 的 VUE_APP_* 声明
 ├── views/HomeView.vue
 ├── views/NotFoundView.vue
 ├── components/base/StatusPill.vue
 ├── styles/global.css
 └── assets/logo.png          # 未引用，待替换
 ```
+
+> 该小节记录的是 P0 完成时的形态；其中的 `.js` 路径已于 2026-09-02 全部改为 `.ts`（见第 11 节）。
 
 ### 10.3 静态原型（2026-09-02 新增 `demo/`）
 
@@ -285,7 +296,7 @@ demo/
 `POST /api/kb/{id}/retrieve` 等待实现接口的字段口径；扩展令牌清单见 `demo/assets/tokens.css` 下半段，
 正式开发时并入 `src/styles/global.css`（对应 P1「主题令牌扩展」）。
 
-### 10.3 验证证据
+### 10.4 验证证据
 
 - `npm run lint`：**0 error**（先遇到两个真实坑，见 10.4，已修）。
 - `npm run build`：**成功**，编译 9036ms；产物 `chunk-vendors` 196.45 KiB（gzip 70.22）、`index` 11.08 KiB（gzip 5.14）、懒加载 chunk `745` 0.72 KiB（NotFoundView，证明代码分割生效）、`index.css` 3.96 KiB；**`.map` 文件数为 0**，`productionSourceMap: false` 生效。
@@ -293,15 +304,75 @@ demo/
 - 开发服务器（临时启动验证，已关闭）：`GET /` → 200；`GET /api/health` → 500 `Proxy error ... ECONNREFUSED`，证明 `/api` 代理规则已生效且指向 `http://127.0.0.1:8000`（后端未启动属预期）。
 - 无头浏览器渲染：页面正常挂载，顶栏品牌、主题切换按钮、两张卡片、状态标签（待命）均正确显示，说明 pinia/router/env 注入链路可用。
 
-### 10.4 落地过程中的两个工程坑（后续注意）
+### 10.5 落地过程中的工程坑（后续注意）
 
 1. ESLint 7 不识别 `env: es2022`，会直接报 `Environment key "es2022" is unknown`；本项目使用 `es2021`。升级到 ESLint 8 后才可用 `es2022`。
 2. `eslint-plugin-vue@8` 不会自动声明 `<script setup>` 编译器宏，需显式加 `"vue/setup-compiler-macros": true`，否则 `defineProps` 触发 `no-undef`。升级到 `eslint-plugin-vue@9` 后该 env 已内置，需移除以免告警。
 3. 依赖体积影响：vendors 从 105.29 KiB 增至 196.45 KiB（gzip 37.65 → 70.22 KiB），增量为 router + pinia + axios。引入 UI 组件库前需先确认按需引入方案。
 
-### 10.5 剩余缺口（下一步）
+### 10.6 剩余缺口（下一步）
 
 - **P1 骨架**：侧栏 + 内容区布局壳（`sidebarCollapsed` 已在 store 中，尚无消费方）、真实品牌资源与 favicon、把 `assets/logo.png` 换成产品标识。
 - **P1/P2**：UI 组件库选型确认（element-plus 或自研）、会话与对话视图、Markdown/代码块渲染、后端接口契约（`personal-workspace-app` 需要真实 `/api/health` 与聊天接口）。
 - **P2 流式**：AI 对话的 SSE / fetch-stream 封装，放 `src/api/`，经 `src/composables/` 暴露。
-- **P4 工程化**：vitest + @vue/test-utils、CI（lint + build）、`engines` 声明、可选 Prettier（需先升 ESLint 8）、`jsconfig.json` target 与 browserslist 对齐。
+- **P4 工程化**：vitest + @vue/test-utils、CI（lint + type-check + build）、`engines` 声明、可选 Prettier（需先升 ESLint 8）。
+
+---
+
+## 11. TypeScript 迁移记录（2026-09-02）
+
+按 `AGENTS.md` 的选型确认流程，把项目规范从「Vue 3.5 + JavaScript」改为「Vue 3.5 + TypeScript」，并把现存代码全量迁完，不留双语并存。
+
+### 11.1 变更清单
+
+**新增依赖（dev）**：`typescript@5.4.5`、`vue-tsc@1.8.27`、`ts-loader@9.6.2`、`@types/node@18.19.x`、`@typescript-eslint/parser@5.62.0`、`@typescript-eslint/eslint-plugin@5.62.0`。
+**移除依赖（dev）**：`@babel/eslint-parser`（解析器已换成 `@typescript-eslint/parser`）。
+**依赖版本收紧**：`vue` 从 `^3.2.13` 提到 `^3.5.0`（实际安装一直是 3.5.42）——`withDefaults(defineProps<T>())` 引用导入类型需要 Vue 3.3+，声明过宽会让新机器装出不支持写法的版本。
+
+**重命名**：`src/main.js`、`src/router/index.js`、`src/stores/app.js`、`src/api/http.js`、`src/api/workspace.js` → 同名 `.ts`。
+**新增**：`tsconfig.json`、`src/types/ui.ts`、`src/types/env.d.ts`。
+**删除**：`jsconfig.json`（被 `tsconfig.json` 取代；同时消掉 issue R11「target es5 与 browserslist 不一致」）。
+**改写**：4 个 SFC 全部加 `lang="ts"`，`StatusPill.vue` 的 props 从运行时声明改为 `withDefaults(defineProps<Props>(), ...)`，`HomeView.vue` 的 `catch (error)` 走 `isApiError` 类型守卫。
+
+**脚本变更**（`package.json`）
+
+| 脚本 | 现在执行 | 说明 |
+| --- | --- | --- |
+| `serve` | `vue-cli-service serve` | 不变，类型错误不阻塞热更（保证开发流畅） |
+| `type-check` | `vue-tsc --noEmit` | 新增，唯一的全量类型检查入口 |
+| `build` | `npm run type-check && vue-cli-service build` | 类型错误即构建失败，等价于官方插件 fork-ts-checker 的作用 |
+| `lint` | `vue-cli-service lint "src/**/*.{ts,js,jsx,vue}" "*.js"` | 必须显式给 glob：插件的扩展名表来自 `hasPlugin('typescript')`，本项目没装该插件 |
+
+### 11.2 为什么不用 `@vue/cli-plugin-typescript`
+
+`@vue/cli-plugin-typescript@5.0.9` 的 `peerOptional cache-loader@^4.1.0` 仍要求 `webpack@^4`，在本项目（webpack 5）下 `npm install` 直接 ERESOLVE 失败，只能仓库级 `legacy-peer-deps` 才能装。为避免把「忽略 peer」变成全项目长期约束，改为手工接线，代价集中在 `vue.config.js` 的 `chainWebpack`：
+
+1. `rule('ts')`：`test /\.tsx?$/`，`ts-loader`（`transpileOnly`、`appendTsSuffixTo: [/\.vue$/]`）→ `babel-loader`（loader 右→左执行，先脱类型再做 preset-env 降级）。
+2. `resolve.extensions` 追加 `.ts`/`.tsx`，否则 `@/api/http` 这类无扩展名导入解析不到。
+3. `config.plugin('eslint').tap(...)` 给 `lintOnSave` 的 eslint-webpack-plugin 补 `.ts`/`.tsx`，否则构建期只检查 `.js/.jsx/.vue`，`.ts` 会静默漏检。
+
+`transpileOnly: true` 是有意为之：类型检查由 `vue-tsc` 单点负责，避免 ts-loader 与 vue-tsc 重复编译、重复报错。
+
+### 11.3 迁移过程中踩到的两个坑
+
+1. **`@babel/preset-typescript` 不能替代 ts-loader。** 最初的方案是把 preset-typescript 塞进 `babel.config.js`，`tsc` 与 `.ts` 文件都正常，但 `npm run build` 在 `App.vue?vue&type=script&lang=ts` 上报 `Missing initializer in const declaration`。
+   原因：vue-loader 用「伪造文件名」`App.vue.ts` 去匹配 loader 规则，但传给 Babel 的 `filename` 仍是 `App.vue`，preset-typescript 的 `test: /\.ts$/` 扩展名探测因此失效。
+   理论上 `allExtensions: true` 可以绕过，但那会让 TS 解析器作用到所有被转译的文件（`transpileDependencies: true` 下含全部 node_modules），存在误解析风险。改用 ts-loader 的 `appendTsSuffixTo`（按 `resourcePath` 判定）后没有这个问题。
+2. **`no-undef` 在 TS 文件下会误报内建类型。** `Record<...>`、`Promise<T>` 会被判成未定义变量，`import type` 也会被基座 `no-unused-vars` 判成未使用。因此在 `overrides` 里对 `*.ts`/`*.tsx`/`*.vue` 关掉这两条基座规则，改用 `@typescript-eslint/no-unused-vars`。
+
+### 11.4 验证证据
+
+- `npm run type-check`：**0 error**（`vue-tsc --noEmit`，含 `.vue` 模板类型检查）。
+- `npm run lint`：**0 error / 0 warning**（显式 glob 生效，`.ts` 与 `.vue` 均被 `@typescript-eslint` 规则覆盖）。
+- `npm run build`：**成功**，编译约 10.4s；产物 `chunk-vendors` 197.16 KiB（gzip 70.40）、`index` 11.60 KiB（gzip 5.35）、懒加载 chunk `461` 0.72 KiB（NotFoundView）、`index.css` 3.96 KiB；**无 `.map` 产物**。相对 P0 基线（196.45 / 11.08 KiB）增量 < 1 KiB，来自首页新增的一行能力说明。
+- **负向验证**（确认检查链路没有静默缩水）：
+  - 在 `src/api/workspace.ts` 里加 `export const probeAny: any = 1` → `npm run lint` 与 `npm run build` 均**失败**并指名 `@typescript-eslint/no-explicit-any`。
+  - 在 `StatusPill.vue` 的 `<script setup lang="ts">` 里加未使用变量 → `npm run lint` 报 `@typescript-eslint/no-unused-vars`（证明 `.vue` 也走了 TS 规则）。
+- **运行时冒烟**（无头浏览器加载 `dist/`）：`<title>工作台 · 个人 AI 工作台</title>` 证明 router + `RouteMeta` 生效；`data-theme="light"` 证明 pinia store 的 `watchEffect` 生效；状态标签渲染为「待命」，证明 `withDefaults(defineProps<Props>())` + 导入类型在运行时正确；新增的「TypeScript / vue-tsc」能力行正常显示。
+
+### 11.5 行为差异与遗留
+
+- `ApiError.code` 现在是受限联合类型 `ApiErrorCode`。后端若返回白名单外的 `code`，之前会原样透传，现在归一化为 `'HTTP_ERROR'`，原值仍保留在 `ApiError.detail.code`。当前后端未实现（R10），不影响现有调用方。
+- `StatusPill` 的 `state` 由 `string` 收紧为 `StatusState`，模板里原有的 `|| props.state` 兜底分支已删除（类型上不再可达）。
+- 未引入 `parserOptions.project`，因此 `@typescript-eslint` 的**需要类型信息**的规则（如 `no-floating-promises`）暂不可用；`serve` 阶段不做类型检查，需要即时反馈可在 IDE 开 Volar/vue-tsc。
+- `demo/` 仍是原生 JS 静态原型（无构建步骤），是「全量 TS」的显式例外。

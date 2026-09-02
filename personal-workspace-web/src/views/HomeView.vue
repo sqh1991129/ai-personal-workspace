@@ -1,29 +1,39 @@
-<script setup>
+<script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue'
 import StatusPill from '@/components/base/StatusPill.vue'
-import { API_BASE_URL } from '@/api/http'
+import { API_BASE_URL, isApiError } from '@/api/http'
 import { checkHealth } from '@/api/workspace'
+import type { StatusState } from '@/types/ui'
 
 const healthPath = `${API_BASE_URL}/health`
 
-const capabilities = [
-  { name: 'vue-router', note: '路由表 src/router/index.js，视图按懒加载拆分' },
-  { name: 'pinia', note: '跨视图 UI 状态 src/stores/app.js（主题、侧栏）' },
-  { name: 'axios', note: '统一实例 src/api/http.js，含超时与错误归一化' },
+interface Capability {
+  name: string
+  note: string
+}
+
+const capabilities: Capability[] = [
+  { name: 'vue-router', note: '路由表 src/router/index.ts，视图按懒加载拆分' },
+  { name: 'pinia', note: '跨视图 UI 状态 src/stores/app.ts（主题、侧栏）' },
+  { name: 'axios', note: '统一实例 src/api/http.ts，含超时与错误归一化' },
+  { name: 'TypeScript', note: '共享类型 src/types，npm run type-check 走 vue-tsc' },
   { name: '环境变量', note: '.env.development / .env.production 提供 VUE_APP_*' },
   { name: '开发代理', note: `devServer 把 ${API_BASE_URL}/* 转发到本机后端` }
 ]
 
-const healthState = ref('idle')
-const healthDetail = ref('尚未发起检测')
-let controller = null
+const healthState = ref<StatusState>('idle')
+const healthDetail = ref<string>('尚未发起检测')
+let controller: AbortController | null = null
 
-function preview(payload) {
+function preview(payload: unknown): string {
+  if (payload === null || payload === undefined) {
+    return '空响应'
+  }
   const text = typeof payload === 'string' ? payload : JSON.stringify(payload)
-  return text && text.length > 160 ? `${text.slice(0, 160)}…` : text || '空响应'
+  return text.length > 160 ? `${text.slice(0, 160)}…` : text || '空响应'
 }
 
-async function probeBackend() {
+async function probeBackend(): Promise<void> {
   if (controller) {
     controller.abort()
   }
@@ -35,15 +45,18 @@ async function probeBackend() {
     healthState.value = 'online'
     healthDetail.value = `后端已响应：${preview(data)}`
   } catch (error) {
-    if (error.code === 'CANCELED') {
+    const code = isApiError(error) ? error.code : 'UNKNOWN'
+    const message = error instanceof Error ? error.message : String(error)
+
+    if (code === 'CANCELED') {
       healthState.value = 'idle'
       healthDetail.value = '上一次检测已取消'
-    } else if (error.code === 'HTTP_ERROR') {
+    } else if (code === 'HTTP_ERROR') {
       healthState.value = 'offline'
-      healthDetail.value = `后端可达但接口未就绪：${error.message}`
+      healthDetail.value = `后端可达但接口未就绪：${message}`
     } else {
       healthState.value = 'offline'
-      healthDetail.value = error.message
+      healthDetail.value = message
     }
   } finally {
     controller = null

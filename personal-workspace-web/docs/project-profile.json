@@ -41,6 +41,12 @@
       "@vue/cli-service": "5.0.9",
       "@vue/cli-plugin-babel": "5.0.9",
       "@vue/cli-plugin-eslint": "5.0.9",
+      "typescript": "5.4.5",
+      "vue-tsc": "1.8.27",
+      "ts-loader": "9.6.2",
+      "@types/node": "18.19.130",
+      "@typescript-eslint/parser": "5.62.0",
+      "@typescript-eslint/eslint-plugin": "5.62.0",
       "eslint": "7.32.0",
       "eslint-plugin-vue": "8.7.1",
       "eslint-webpack-plugin": "3.2.0",
@@ -54,47 +60,88 @@
   },
   "stack": {
     "apiStyle": "script-setup-composition",
-    "language": "javascript",
-    "typescript": false,
+    "language": "typescript",
+    "typescript": true,
+    "tsVersion": "5.4.5",
+    "strict": true,
+    "tsTranspile": "ts-loader transpileOnly + appendTsSuffixTo(/\\.vue$/), then babel-loader",
+    "tsTypeCheck": "vue-tsc --noEmit (npm run type-check, chained into build)",
+    "cliTypescriptPlugin": false,
+    "jsKeptFor": ["vue.config.js", "babel.config.js", "demo/**"],
     "cssStrategy": "plain css + css variable tokens + scoped styles",
     "preprocessor": null,
     "uiLibrary": null,
-    "router": { "module": "src/router/index.js", "mode": "history", "lazyLoading": true, "titleFromMeta": true },
-    "state": { "module": "src/stores/app.js", "persisted": ["workspace.theme"] },
+    "router": { "module": "src/router/index.ts", "mode": "history", "lazyLoading": true, "titleFromMeta": true, "routeMetaAugmented": true },
+    "state": { "module": "src/stores/app.ts", "persisted": ["workspace.theme"] },
     "http": {
-      "module": "src/api/http.js",
+      "module": "src/api/http.ts",
       "baseUrlEnv": "VUE_APP_API_BASE",
       "timeoutEnv": "VUE_APP_API_TIMEOUT",
       "unwrapsResponseData": true,
+      "publicType": "HttpClient (Promise<T>, not AxiosInstance)",
       "errorType": "ApiError",
       "errorCodes": ["CANCELED", "TIMEOUT", "NETWORK", "HTTP_ERROR", "UNKNOWN"],
+      "errorCodeIsClosedUnion": true,
+      "typeGuards": ["isApiError", "isApiErrorCode"],
       "requestIdHeader": "X-Request-Id"
     },
     "lint": {
       "extends": ["plugin:vue/vue3-essential", "eslint:recommended"],
+      "parser": "vue-eslint-parser",
+      "tsParser": "@typescript-eslint/parser",
+      "overrides": [
+        {
+          "files": ["*.ts", "*.tsx", "*.vue"],
+          "off": ["no-undef", "no-unused-vars"],
+          "on": ["@typescript-eslint/no-unused-vars", "@typescript-eslint/no-explicit-any", "@typescript-eslint/consistent-type-imports"]
+        }
+      ],
       "env": ["node", "browser", "es2021", "vue/setup-compiler-macros"],
       "customRules": {},
       "prettier": false,
+      "typeAwareRules": false,
       "notes": [
         "ESLint 7 不支持 env es2022，会直接报错",
-        "eslint-plugin-vue@8 需显式声明 vue/setup-compiler-macros，升级到 v9 后需移除"
+        "eslint-plugin-vue@8 需显式声明 vue/setup-compiler-macros，升级到 v9 后需移除",
+        "未设 parserOptions.project，@typescript-eslint 的类型感知规则（如 no-floating-promises）不可用",
+        "lintOnSave 的扩展名表来自 hasPlugin('typescript')；本项目未装该插件，改由 vue.config.js 的 plugin('eslint').tap 补 .ts/.tsx"
       ]
     }
   },
-  "absent": ["uiLibrary", "preprocessor", "unitTest", "e2eTest", "ci", "docker", "gitHooks", "i18n", "auth", "streamingClient", "errorTracking", "brandAssets"],
+  "absent": ["preprocessor", "unitTest", "e2eTest", "ci", "docker", "gitHooks", "i18n", "auth", "streamingClient", "errorTracking", "brandAssets", "uiLibrary"],
   "scripts": {
     "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "build": "npm run type-check && vue-cli-service build",
+    "lint": "vue-cli-service lint \"src/**/*.{ts,js,jsx,vue}\" \"*.js\"",
+    "type-check": "vue-tsc --noEmit"
   },
   "config": {
     "vue.config.js": {
       "transpileDependencies": true,
       "productionSourceMap": false,
-      "pages.index": { "entry": "src/main.js", "template": "public/index.html", "filename": "index.html", "title": "<VUE_APP_TITLE>" },
+      "pages.index": { "entry": "src/main.ts", "template": "public/index.html", "filename": "index.html", "title": "<VUE_APP_TITLE>" },
+      "chainWebpack": [
+        "rule('ts'): ts-loader(transpileOnly, appendTsSuffixTo [/\\.vue$/]) -> babel-loader, test /\\.tsx?$/",
+        "resolve.extensions += .ts/.tsx",
+        "plugin('eslint').tap: extensions += .ts/.tsx"
+      ],
       "devServer": { "port": "<VUE_APP_DEV_PORT|8080>", "proxy": { "/api": { "target": "<VUE_APP_API_PROXY_TARGET>", "changeOrigin": true } } }
     },
+    "tsconfig.json": {
+      "target": "esnext",
+      "module": "esnext",
+      "moduleResolution": "bundler",
+      "strict": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "isolatedModules": true,
+      "noEmit": true,
+      "paths": { "@/*": ["src/*"] },
+      "include": ["src/**/*.ts", "src/**/*.vue"],
+      "excluded": ["demo"]
+    },
     "envFiles": [".env.development", ".env.production"],
+    "envTypeDeclarations": "src/types/env.d.ts",
     "envKeys": {
       "VUE_APP_TITLE": "个人 AI 工作台",
       "VUE_APP_API_BASE": "/api",
@@ -105,20 +152,23 @@
     "alias": { "@": "src" },
     "browserslist": ["> 1%", "last 2 versions", "not dead", "not ie 11"],
     "differentialLoading": false,
-    "jsconfigTarget": "es5",
-    "jsconfigTargetConflictsBrowserslist": true
+    "jsconfigFile": null,
+    "jsconfigTarget": null,
+    "jsconfigTargetConflictsBrowserslist": false
   },
   "structure": {
-    "root": ["AGENTS.md", "README.md", "package.json", "package-lock.json", "vue.config.js", "babel.config.js", "jsconfig.json", ".env.development", ".env.production", ".gitignore", "docs", "demo", "public", "src"],
+    "root": ["AGENTS.md", "README.md", "package.json", "package-lock.json", "vue.config.js", "babel.config.js", "tsconfig.json", ".env.development", ".env.production", ".gitignore", "docs", "demo", "public", "src"],
     "public": ["index.html", "favicon.ico"],
     "src": {
       "files": [
-        "src/main.js",
+        "src/main.ts",
         "src/App.vue",
-        "src/router/index.js",
-        "src/stores/app.js",
-        "src/api/http.js",
-        "src/api/workspace.js",
+        "src/router/index.ts",
+        "src/stores/app.ts",
+        "src/api/http.ts",
+        "src/api/workspace.ts",
+        "src/types/ui.ts",
+        "src/types/env.d.ts",
         "src/views/HomeView.vue",
         "src/views/NotFoundView.vue",
         "src/components/base/StatusPill.vue",
@@ -126,8 +176,9 @@
         "src/assets/logo.png"
       ],
       "unreferencedAssets": ["src/assets/logo.png"],
-      "directories": ["src/router", "src/stores", "src/api", "src/views", "src/components/base", "src/styles", "src/assets"],
-      "notYetCreated": ["src/composables", "src/components/business", "src/utils", "src/constants"]
+      "directories": ["src/router", "src/stores", "src/api", "src/types", "src/views", "src/components/base", "src/styles", "src/assets"],
+      "notYetCreated": ["src/composables", "src/components/business", "src/utils", "src/constants"],
+      "languageMix": { "typescript": 5, "vueSfc": 4, "css": 1, "javascript": 0 }
     },
     "sibling": [{ "path": "personal-workspace-app/index.py", "state": "empty-file", "note": "后端占位，接口契约仍未定义" }],
     "demo": {
@@ -140,19 +191,31 @@
   },
   "verified": {
     "lintPassed": true,
+    "typeCheckPassed": true,
     "buildPassed": true,
     "devServerBooted": true,
     "headlessRenderChecked": true,
-    "buildTimeMs": 9036,
+    "negativeChecks": [
+      ".ts 内 export const probeAny: any → lint 与 build 均报 @typescript-eslint/no-explicit-any",
+      ".vue <script setup lang=ts> 内未使用变量 → lint 报 @typescript-eslint/no-unused-vars",
+      "移除 @babel/preset-typescript 后 dist 产物 hash 不变（构建链路无隐藏依赖）"
+    ],
+    "buildTimeMs": 10379,
     "artifacts": [
-      { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 196.45, "gzipKiB": 70.22 },
-      { "file": "dist/js/index.*.js", "sizeKiB": 11.08, "gzipKiB": 5.14 },
-      { "file": "dist/js/745.*.js", "sizeKiB": 0.72, "gzipKiB": 0.49, "note": "NotFoundView 懒加载 chunk" },
+      { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 197.16, "gzipKiB": 70.4 },
+      { "file": "dist/js/index.*.js", "sizeKiB": 11.6, "gzipKiB": 5.35 },
+      { "file": "dist/js/461.*.js", "sizeKiB": 0.72, "gzipKiB": 0.49, "note": "NotFoundView 懒加载 chunk" },
       { "file": "dist/css/index.*.css", "sizeKiB": 3.96, "gzipKiB": 1.23 }
     ],
     "sourceMapsEmitted": false,
     "lazyChunkPresent": true,
     "htmlChecks": { "lang": "zh-CN", "title": "个人 AI 工作台", "placeholderTextRemoved": true },
+    "runtimeChecks": {
+      "mountedFromDist": true,
+      "documentTitle": "工作台 · 个人 AI 工作台",
+      "themeAttr": "data-theme=light",
+      "typedPropsRendered": "StatusPill 显示「待命」"
+    },
     "devServerProbes": {
       "GET /": 200,
       "GET /api/health": "500 Proxy error ECONNREFUSED (proxy wired, backend absent)"
@@ -170,27 +233,31 @@
     { "id": "R10", "priority": "P1", "status": "open", "path": "personal-workspace-app", "problem": "后端 index.py 为空，接口契约未定义，前端会话/对话功能无法联调", "next": "先定义 /api/health 与聊天接口契约（含流式协议）" },
     { "id": "R7", "priority": "P2", "status": "open", "path": "package.json", "problem": "无 UI 组件库；sidebarCollapsed 尚无消费方；缺布局壳与品牌资源", "next": "确认 element-plus 或自研，补侧栏布局与 favicon/logo" },
     { "id": "R8", "priority": "P2", "status": "open", "path": "repo", "problem": "无测试、无 CI、无 git hooks、无 engines", "next": "vitest + @vue/test-utils，CI 跑 lint+build，声明 engines" },
-    { "id": "R11", "priority": "P3", "status": "open", "path": "jsconfig.json", "problem": "target es5 与 browserslist not ie 11 不一致", "next": "改为 es2020 级别并对齐 lib" }
+    { "id": "R11", "priority": "P3", "status": "resolved", "path": "jsconfig.json", "problem": "target es5 与 browserslist not ie 11 不一致", "resolution": "随 TS 迁移删除 jsconfig.json，由 tsconfig.json（target esnext + lib 对齐）取代" },
+    { "id": "R13", "priority": "P2", "status": "resolved", "path": "src/**", "problem": "语言层无类型约束，跨模块契约（ApiError.code、StatusPill.state、RouteMeta.title）只能靠约定", "resolution": "2026-09-02 全量迁移 TypeScript 5.4（strict），ts-loader 转译 + vue-tsc 检查，未引入 @vue/cli-plugin-typescript" },
+    { "id": "R14", "priority": "P3", "status": "open", "path": "package.json", "problem": "未启用 @typescript-eslint 类型感知规则（无 parserOptions.project），no-floating-promises 等检测缺位", "next": "需要时在 overrides 里加 project 并处理根配置文件的 project 归属" }
   ],
   "conventions": {
-    "component": ["SFC 三段式", "<script setup> + Composition API（新代码）", "PascalCase 组件名", "一文件一组件", "<style scoped> + 令牌变量"],
-    "imports": ["使用 @/ 别名引用 src 内模块"],
+    "component": ["SFC 三段式", "<script setup lang=\"ts\"> + Composition API（新代码）", "props 用 withDefaults(defineProps<T>()) 声明", "PascalCase 组件名", "一文件一组件", "<style scoped> + 令牌变量"],
+    "imports": ["使用 @/ 别名引用 src 内模块", "纯类型导入必须写成 import type"],
+    "types": ["共享类型放 src/types/", "禁止 any，用 unknown + 类型守卫", "后端返回体先按可选字段 + 索引签名描述"],
     "branch": "codex/<task-slug>",
-    "preCommit": ["npm run lint", "npm run build"],
+    "preCommit": ["npm run lint", "npm run type-check", "npm run build"],
     "rules": [
       "后端地址与开关只从 process.env.VUE_APP_* 读取",
+      "新增环境变量需同步 .env.*、src/types/env.d.ts 与 README 变量表",
       "网络调用只出现在 src/api/**，组件经 src/composables/** 使用",
       "views 路由组件懒加载（首页可同步引入）",
       "components/base 不依赖 store 与 api",
-      "新增环境变量需同步 .env.* 与 README 变量表",
+      "src/** 不新增 .js（vue.config.js / babel.config.js / demo 除外）",
       "新增依赖需同步 docs/PROJECT_ANALYSIS.md 与本档案"
     ]
   },
   "roadmap": [
-    { "phase": "P0", "name": "基建", "status": "done", "delivered": ["清理 R1/R2", "vue-router", "pinia", "axios + env + 代理", "productionSourceMap:false", "404 页", "AGENTS.md"] },
+    { "phase": "P0", "name": "基建", "status": "done", "delivered": ["清理 R1/R2", "vue-router", "pinia", "axios + env + 代理", "productionSourceMap:false", "404 页", "AGENTS.md", "demo/ 静态原型", "TypeScript 迁移（R13）"] },
     { "phase": "P1", "name": "骨架", "status": "pending", "tasks": ["侧栏 + 内容区布局壳", "主题令牌扩展", "品牌资源与 favicon", "后端接口契约"] },
     { "phase": "P2", "name": "主流程", "status": "pending", "tasks": ["会话列表", "对话页", "Markdown/代码块渲染", "打通聊天接口"] },
     { "phase": "P3", "name": "体验", "status": "pending", "tasks": ["流式输出", "中断/重试", "消息持久化", "长列表虚拟化", "快捷键"] },
-    { "phase": "P4", "name": "工程化", "status": "pending", "tasks": ["vitest 单测", "收紧 lint 规则", "CI 构建产物", "engines 声明"] }
+    { "phase": "P4", "name": "工程化", "status": "pending", "tasks": ["vitest 单测", "收紧 lint 规则", "启用 @typescript-eslint 类型感知规则", "CI 构建产物（lint + type-check + build）", "engines 声明"] }
   ]
 }

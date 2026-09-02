@@ -1,7 +1,13 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 
-const routes = [
+declare module 'vue-router' {
+  interface RouteMeta {
+    title?: string
+  }
+}
+
+const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'home',

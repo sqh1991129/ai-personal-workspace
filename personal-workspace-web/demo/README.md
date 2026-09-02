@@ -64,15 +64,15 @@ cd demo
 
 | 原型区域 | 建议落点 | 状态来源 | 接口（待后端实现） |
 | --- | --- | --- | --- |
-| 外壳 / 侧栏 / 主题 | `src/App.vue` | `src/stores/app.js` | — |
-| 总览指标与快捷提问 | `src/views/HomeView.vue`（演进） | `src/stores/app.js` | `GET /api/summary` |
-| 会话列表 | `src/components/business/SessionList.vue` | `src/stores/chat.js` | `GET /api/chat/sessions` |
-| 消息流 / 消息气泡 | `src/components/business/MessageStream.vue`、`MessageItem.vue` | `src/stores/chat.js` | `POST /api/chat/completions`（SSE） |
-| 输入区（附件 / 知识库 / 深度思考） | `src/components/business/ChatComposer.vue` | 组件内 state + `stores/chat.js` | — |
-| 参数面板 | `src/components/business/ChatParamsPanel.vue` | `stores/chat.js` | — |
-| 知识库列表 / 文档表格 | `src/views/KnowledgeView.vue`、`business/KbList.vue` | `src/stores/knowledge.js` | `GET /api/kb`、`GET /api/kb/{id}/documents` |
+| 外壳 / 侧栏 / 主题 | `src/App.vue` | `src/stores/app.ts` | — |
+| 总览指标与快捷提问 | `src/views/HomeView.vue`（演进） | `src/stores/app.ts` | `GET /api/summary` |
+| 会话列表 | `src/components/business/SessionList.vue` | `src/stores/chat.ts` | `GET /api/chat/sessions` |
+| 消息流 / 消息气泡 | `src/components/business/MessageStream.vue`、`MessageItem.vue` | `src/stores/chat.ts` | `POST /api/chat/completions`（SSE） |
+| 输入区（附件 / 知识库 / 深度思考） | `src/components/business/ChatComposer.vue` | 组件内 state + `stores/chat.ts` | — |
+| 参数面板 | `src/components/business/ChatParamsPanel.vue` | `stores/chat.ts` | — |
+| 知识库列表 / 文档表格 | `src/views/KnowledgeView.vue`、`business/KbList.vue` | `src/stores/knowledge.ts` | `GET /api/kb`、`GET /api/kb/{id}/documents` |
 | 分片详情抽屉 | `src/components/base/Drawer.vue`、`business/ChunkList.vue` | 组件内 state | `GET /api/documents/{id}/chunks` |
-| 召回测试 | `src/components/business/RecallTester.vue` | `composables/useRetrieval.js` | `POST /api/kb/{id}/retrieve` |
+| 召回测试 | `src/components/business/RecallTester.vue` | `composables/useRetrieval.ts` | `POST /api/kb/{id}/retrieve` |
 | 索引状态标记 | `src/components/base/StatusPill.vue`（已存在） | props | — |
 
 ## 落地注意事项

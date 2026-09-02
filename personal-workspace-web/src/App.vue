@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { watchEffect } from 'vue'
 import { useAppStore } from '@/stores/app'
 
-const appTitle = process.env.VUE_APP_TITLE || '个人 AI 工作台'
+const appTitle: string = process.env.VUE_APP_TITLE || '个人 AI 工作台'
 const appStore = useAppStore()
 
 watchEffect(() => {

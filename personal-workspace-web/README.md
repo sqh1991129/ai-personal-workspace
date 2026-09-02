@@ -1,19 +1,23 @@
 # 个人 AI 工作台 · 前端（personal-workspace-web）
 
-Vue 3 单页应用。前端基建（路由 / 状态管理 / 请求层 / 环境变量 / 开发代理 / 主题令牌）已就绪，业务功能待开发。
+Vue 3 + TypeScript 单页应用。前端基建（路由 / 状态管理 / 请求层 / 环境变量 / 开发代理 / 主题令牌）已就绪，业务功能待开发。
 
 ## 快速开始
 
 ```bash
 npm install
-npm run serve    # 开发服务器 http://localhost:8080
-npm run build    # 生产构建，产物在 dist/
-npm run lint     # ESLint 检查
+npm run serve         # 开发服务器 http://localhost:8080
+npm run type-check    # vue-tsc 类型检查
+npm run build         # 先类型检查，再生产构建，产物在 dist/
+npm run lint          # ESLint 检查（含 .ts / .vue）
 ```
 
 ## 技术栈
 
-Vue 3.5 · Vue CLI 5（webpack 5）· vue-router 4 · pinia 2 · axios 1 · ESLint 7（`plugin:vue/vue3-essential`）· 纯 CSS + CSS 变量主题令牌。
+Vue 3.5 · TypeScript 5.4（`strict`，`vue-tsc` 检查，`ts-loader` 转译）· Vue CLI 5（webpack 5）· vue-router 4 · pinia 2 · axios 1 · ESLint 7（`plugin:vue/vue3-essential` + `@typescript-eslint` 5）· 纯 CSS + CSS 变量主题令牌。
+
+`src/**` 全部为 `.ts` / `<script setup lang="ts">`；只有 `vue.config.js`、`babel.config.js`（Vue CLI 5 不支持 `vue.config.ts`）
+和零依赖的 `demo/` 原型保持 JavaScript。约定与禁止项见 `AGENTS.md`。
 
 ## 环境变量
 
@@ -27,21 +31,25 @@ Vue 3.5 · Vue CLI 5（webpack 5）· vue-router 4 · pinia 2 · axios 1 · ESLi
 
 - `.env.development` / `.env.production` 随仓库提交，只放非敏感默认值。
 - 个人覆盖写入 `.env.development.local`（已被 `.gitignore` 忽略），不要改动提交版的值。
+- 前端读取的 `VUE_APP_*` 在 `src/types/env.d.ts` 里声明，新增变量需同步这三处。
 
 ## 目录结构
 
 ```text
 src/
-├── main.js                 # 装配 pinia + router + 全局样式
+├── main.ts                 # 装配 pinia + router + 全局样式
 ├── App.vue                 # 布局壳：顶栏、主题切换、RouterView
-├── router/index.js         # 路由表 + 文档标题
-├── stores/app.js           # 跨视图 UI 状态（主题、侧栏）
-├── api/http.js             # axios 实例、拦截器、ApiError
-├── api/workspace.js        # 领域接口（当前：健康检查）
+├── router/index.ts         # 路由表 + 文档标题
+├── stores/app.ts           # 跨视图 UI 状态（主题、侧栏）
+├── api/http.ts             # axios 实例、拦截器、ApiError + 类型守卫
+├── api/workspace.ts        # 领域接口（当前：健康检查）
+├── types/                  # 共享类型：ui.ts 与 env.d.ts（process.env 声明）
 ├── views/                  # 路由级页面（HomeView / NotFoundView）
 ├── components/base/        # 无业务依赖的通用组件
 └── styles/global.css       # 设计令牌与基础样式
 ```
+
+根目录另有 `tsconfig.json`（`strict` + `@/*` 别名，与 webpack alias 对齐）。
 
 ## 界面原型
 

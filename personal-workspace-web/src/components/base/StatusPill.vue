@@ -1,19 +1,24 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
+import type { StatusState } from '@/types/ui'
 
-const props = defineProps({
-  state: { type: String, required: true },
-  label: { type: String, default: '' }
+interface Props {
+  state: StatusState
+  label?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  label: ''
 })
 
-const labels = {
+const labels: Record<StatusState, string> = {
   idle: '待命',
   checking: '检测中',
   online: '已连接',
   offline: '未连接'
 }
 
-const text = computed(() => props.label || labels[props.state] || props.state)
+const text = computed<string>(() => props.label || labels[props.state])
 </script>
 
 <template>
@@ -63,3 +68,4 @@ const text = computed(() => props.label || labels[props.state] || props.state)
   }
 }
 </style>
+
