@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>对话模块 · 个人 AI 工作台（原型）</title>
+<meta name="description" content="AI 对话模块静态原型：会话列表、流式消息、引用来源、参数面板、输入区。">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/prototype.css">
+<link rel="stylesheet" href="assets/modules.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <a class="sidebar__brand" href="index.html"><span class="sidebar__mark">WS</span><span>个人 AI 工作台</span></a>
+    <nav class="sidebar__nav" aria-label="主导航">
+      <a class="nav-item" href="index.html"><span data-icon="grid"></span><span class="nav-item__text">总览</span></a>
+      <a class="nav-item is-active" href="chat.html" aria-current="page"><span data-icon="chat"></span><span class="nav-item__text">对话</span><span class="nav-item__count">12</span></a>
+      <a class="nav-item" href="knowledge.html"><span data-icon="book"></span><span class="nav-item__text">知识库</span><span class="nav-item__count">4</span></a>
+      <p class="sidebar__label">规划中</p>
+      <a class="nav-item is-soon" href="#todo" title="本原型未包含，仅占位"><span data-icon="task"></span><span class="nav-item__text">任务自动化</span></a>
+      <a class="nav-item is-soon" href="#todo" title="本原型未包含，仅占位"><span data-icon="settings"></span><span class="nav-item__text">设置</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <div class="profile">
+        <span class="avatar">全</span>
+        <span class="profile__meta"><span class="row__title">sunquanhu</span><span class="row__meta">本地部署 · v0.1.0</span></span>
+      </div>
+      <p class="text-xs muted">数据仅存于浏览器内存，不会发往任何后端。</p>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn" type="button" data-role="sidebar-toggle" data-icon="panel" title="折叠侧栏" aria-label="折叠侧栏"></button>
+      <div class="topbar__title">
+        <h1>对话</h1>
+        <p>views/ChatView.vue</p>
+      </div>
+      <span class="topbar__spacer"></span>
+      <div class="segmented" data-role="layout-switch" role="tablist" aria-label="布局切换">
+        <button type="button" data-layout="three-col" role="tab">三栏</button>
+        <button type="button" data-layout="two-col" role="tab">两栏</button>
+        <button type="button" data-layout="one-col" role="tab">专注</button>
+      </div>
+      <label class="search" style="width:200px">
+        <span data-icon="search" class="icon--sm"></span>
+        <input class="input" data-role="global-search" type="search" placeholder="搜索会话、文档" aria-label="全局搜索">
+        <kbd class="kbd">⌘K</kbd>
+      </label>
+      <button class="icon-btn" type="button" data-role="theme-toggle" title="切换到深色" aria-label="切换到深色"></button>
+    </header>
+
+    <main class="page">
+      <section class="module" data-module="chat" data-layout="three-col" aria-label="对话模块">
+
+        <!-- 会话列表：建议实现为 components/business/SessionList.vue -->
+        <aside class="rail" aria-label="会话列表">
+          <div class="rail__head">
+            <button class="btn btn--primary btn--block" type="button" data-action="new-chat"><span data-icon="plus" class="icon--sm"></span>新建会话</button>
+            <label class="search"><span data-icon="search" class="icon--sm"></span><input class="input" data-role="session-filter" type="search" placeholder="筛选会话" aria-label="筛选会话"></label>
+          </div>
+          <div class="rail__body">
+            <p class="rail__label">今天</p>
+            <button class="row is-active" type="button" data-action="open-session"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">流式接口与停止生成</span><span class="row__meta">12 条消息 · 引用 3 来源</span></span><span class="nav-item__count">10:24</span></button>
+            <button class="row" type="button" data-action="open-session"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">知识库分片策略评审</span><span class="row__meta">8 条消息</span></span><span class="nav-item__count">09:05</span></button>
+            <button class="row" type="button" data-action="open-session"><span data-icon="bolt" class="icon--sm"></span><span class="row__main"><span class="row__title">把 AGENTS.md 压成一页清单</span><span class="row__meta">5 条消息</span></span><span class="nav-item__count">08:41</span></button>
+            <p class="rail__label">昨天</p>
+            <button class="row" type="button" data-action="open-session"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">Vue Router 标题与埋点方案</span><span class="row__meta">14 条消息</span></span><span class="nav-item__count">21:36</span></button>
+            <button class="row" type="button" data-action="open-session"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">周报草稿：前端基建进展</span><span class="row__meta">21 条消息</span></span><span class="nav-item__count">20:12</span></button>
+            <p class="rail__label">7 天内</p>
+            <button class="row" type="button" data-action="open-session"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">RAG 召回率偏低排查</span><span class="row__meta">6 条消息</span></span><span class="nav-item__count">8 月 29 日</span></button>
+            <button class="row" type="button" data-action="open-session"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">本地模型量化选型</span><span class="row__meta">9 条消息</span></span><span class="nav-item__count">8 月 27 日</span></button>
+          </div>
+        </aside>
+
+        <!-- 消息流：建议实现为 components/business/MessageStream.vue + MessageItem.vue -->
+        <div class="thread">
+          <div class="thread__subbar">
+            <span class="pill pill--accent pill--no-dot">WS-14B · 本地</span>
+            <span>上下文 6.4k / 32k</span>
+            <span>温度 0.7</span>
+            <span>知识库 2 个</span>
+            <span class="topbar__spacer"></span>
+            <button class="btn btn--ghost btn--sm" type="button" data-action="toggle" data-label="只看我的消息" aria-pressed="false"><span data-icon="user" class="icon--sm"></span>只看我的</button>
+            <button class="btn btn--ghost btn--sm" type="button" data-action="toggle" data-label="导出会话" aria-pressed="false"><span data-icon="file" class="icon--sm"></span>导出</button>
+          </div>
+
+          <div class="thread__scroll" data-role="thread-scroll">
+            <div class="thread__inner" data-role="thread-inner">
+
+              <article class="msg msg--user">
+                <div class="avatar avatar--lg">全</div>
+                <div class="msg__col">
+                  <div class="bubble"><p>对话模块的流式响应接口应该怎么设计？前端要注意什么？</p></div>
+                  <div class="msg__meta"><span>10:24</span><span>·</span><span>已附加：知识库 / 架构决策库</span></div>
+                </div>
+              </article>
+
+              <article class="msg msg--assistant">
+                <div class="avatar avatar--lg"><span data-icon="spark" class="icon--sm"></span></div>
+                <div class="msg__col">
+                  <div class="bubble">
+                    <details class="think">
+                      <summary><span data-icon="flask" class="icon--sm"></span> 思考过程 · 3.2s</summary>
+                      <p>先确认现有请求层约定（src/api/http.js 统一超时与错误归一化）→ 判断流式不能用普通 axios 拦截器 → 检索 ADR-001 与接口约定 → 给出 SSE 方案与前端封装边界。</p>
+                    </details>
+                    <p>结论：<strong>用 SSE（<span class="inline-code">text/event-stream</span>）+ fetch ReadableStream</strong>，不要用 axios 的 responseType:'stream'，浏览器端拿不到增量。</p>
+                    <h4>接口约定</h4>
+                    <ul>
+                      <li><span class="inline-code">POST /api/chat/completions</span>，请求体带 <span class="inline-code">session_id</span>、<span class="inline-code">kb_ids</span>、<span class="inline-code">stream:true</span>。</li>
+                      <li>响应按包推送 <span class="inline-code">delta</span>，最后一包带 <span class="inline-code">usage</span> 与 <span class="inline-code">citations</span>，用于渲染 token 与引用来源。</li>
+                      <li>错误也走事件帧（<span class="inline-code">event: error</span>），前端统一降级为「重试」气泡。</li>
+                    </ul>
+                    <p>前端把这套逻辑收在 <span class="inline-code">composables/useChatStream.js</span> 里，卸载时必须 abort：</p>
+                    <div class="codeblock">
+                      <div class="codeblock__bar"><span>JAVASCRIPT · src/composables/useChatStream.js</span><button class="btn btn--ghost btn--sm" type="button" data-action="copy-code">复制</button></div>
+<pre><code><span class="tok-key">export function</span> useChatStream() {
+  <span class="tok-key">const</span> controller = <span class="tok-key">new</span> AbortController()
+
+  <span class="tok-key">async function</span> send(payload, onDelta) {
+    <span class="tok-key">const</span> res = <span class="tok-key">await</span> fetch(<span class="tok-str">'/api/chat/completions'</span>, {
+      method: <span class="tok-str">'POST'</span>,
+      headers: { <span class="tok-str">'Content-Type'</span>: <span class="tok-str">'application/json'</span> },
+      body: JSON.stringify({ ...payload, stream: <span class="tok-key">true</span> }),
+      signal: controller.signal
+    })
+    <span class="tok-com">// 逐行解析 data: {...}，累加到当前 assistant 消息</span>
+  }
+
+  onBeforeUnmount(() =&gt; controller.abort())
+  <span class="tok-key">return</span> { send, abort: () =&gt; controller.abort() }
+}</code></pre>
+                    </div>
+                    <div class="cites">
+                      <button class="cite" type="button" data-action="open-cite" title="在知识库中定位原文"><sup>1</sup>ADR-001 采用 Vue CLI 5 而非 Vite · 第 4 片</button>
+                      <button class="cite" type="button" data-action="open-cite" title="在知识库中定位原文"><sup>2</sup>后端接口约定 v0.md · §3</button>
+                      <button class="cite" type="button" data-action="open-cite" title="在知识库中定位原文"><sup>3</sup>AGENTS.md · 目录职责</button>
+                    </div>
+                  </div>
+                  <div class="msg__meta"><span>10:24</span><span>·</span><span>412 tokens · 1.2s</span>
+                    <span class="msg__actions">
+                      <button class="icon-btn" type="button" data-action="copy-answer" title="复制回答"><span data-icon="copy" class="icon--sm"></span></button>
+                      <button class="icon-btn" type="button" data-action="regenerate" title="重新生成"><span data-icon="refresh" class="icon--sm"></span></button>
+                      <button class="icon-btn" type="button" data-action="feedback" title="有帮助"><span data-icon="thumbUp" class="icon--sm"></span></button>
+                      <button class="icon-btn" type="button" data-action="feedback" title="待改进"><span data-icon="thumbDown" class="icon--sm"></span></button>
+                    </span>
+                  </div>
+                </div>
+              </article>
+
+              <article class="msg msg--user">
+                <div class="avatar avatar--lg">全</div>
+                <div class="msg__col">
+                  <div class="bubble"><p>那「停止生成」和失败重试的 UI 状态怎么呈现？</p></div>
+                  <div class="msg__meta"><span>10:26</span></div>
+                </div>
+              </article>
+
+              <article class="msg msg--assistant">
+                <div class="avatar avatar--lg"><span data-icon="spark" class="icon--sm"></span></div>
+                <div class="msg__col">
+                  <div class="bubble">
+                    <p>三种状态要能被区分，右栏顶部就是当前状态说明：</p>
+                    <ul>
+                      <li><strong>生成中</strong>：发送按钮变成红色方块「停止」，正文尾部保留光标 <span class="inline-code">▍</span>。</li>
+                      <li><strong>已停止</strong>：保留已生成的部分，气泡下方标注「已停止 · 可继续或重新生成」。</li>
+                      <li><strong>失败</strong>：气泡改描边为 danger，附一行错误摘要与「重试」按钮（见下一条示例）。</li>
+                    </ul>
+                    <p class="muted text-sm">这条回答在 38 tokens 处被手动停止 —— 用于展示「部分完成」态。</p>
+                  </div>
+                  <div class="msg__meta"><span>10:27</span><span class="pill pill--warning pill--no-dot">已停止 · 38 / 260 tokens</span></div>
+                </div>
+              </article>
+
+              <article class="msg msg--assistant msg--error">
+                <div class="avatar avatar--lg"><span data-icon="warning" class="icon--sm"></span></div>
+                <div class="msg__col">
+                  <div class="bubble">
+                    <p><strong>请求失败</strong>，无法生成回答。</p>
+                    <p class="muted text-sm"><span class="inline-code">ECONNREFUSED 127.0.0.1:8000</span> · 后端 personal-workspace-app 尚未提供 /api/chat/completions。开发期属预期结果。</p>
+                  </div>
+                  <div class="msg__meta"><span>10:28</span><span class="pill pill--danger pill--no-dot">请求失败</span>
+                    <button class="btn btn--sm" type="button" data-action="regenerate"><span data-icon="refresh" class="icon--sm"></span>重试</button>
+                  </div>
+                </div>
+              </article>
+
+            </div>
+
+            <div hidden data-role="thread-template">
+              <div class="empty-thread" data-role="empty-thread">
+                <span class="avatar avatar--lg"><span data-icon="spark"></span></span>
+                <h3>新会话，从一句话开始</h3>
+                <p class="muted text-sm">模型 WS-14B（本地）· 默认带上「架构决策库」。所有草稿只存在于当前浏览器。</p>
+                <div class="suggestions">
+                  <button type="button" data-action="use-suggestion" data-prompt="帮我把 AGENTS.md 的约束整理成一页可执行的提交前检查清单"><strong>整理提交前检查清单</strong><span>读取 AGENTS.md → 输出 lint / build / 文档同步三步</span></button>
+                  <button type="button" data-action="use-suggestion" data-prompt="对比 SSE 与 WebSocket 在个人工作台的取舍，给出推荐"><strong>技术选型对比</strong><span>引用架构决策库，给出结论与理由</span></button>
+                  <button type="button" data-action="use-suggestion" data-prompt="总结本周知识库新增文档，按主题聚类并标注待办"><strong>本周知识摘要</strong><span>跨 4 个知识库做归纳</span></button>
+                  <button type="button" data-action="use-suggestion" data-prompt="为 useChatStream 写一组 vitest 用例思路"><strong>补测试用例思路</strong><span>覆盖取消、错误、增量拼接</span></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 输入区：建议实现为 components/business/ChatComposer.vue -->
+          <form class="composer" data-role="composer">
+            <div class="composer__box">
+              <textarea data-role="composer-input" rows="1" placeholder="向 WS-14B 提问，输入 @ 可引用知识库文档，Enter 发送 / Shift+Enter 换行" aria-label="消息输入"></textarea>
+              <div class="composer__tools">
+                <button class="tool-toggle" type="button" data-action="toggle" data-label="附件上传" aria-pressed="false"><span data-icon="paperclip" class="icon--sm"></span>附件</button>
+                <button class="tool-toggle" type="button" data-action="toggle" data-label="知识库检索" aria-pressed="true"><span data-icon="book" class="icon--sm"></span>知识库 · 2</button>
+                <button class="tool-toggle" type="button" data-action="toggle" data-label="深度思考" aria-pressed="false"><span data-icon="flask" class="icon--sm"></span>深度思考</button>
+                <button class="tool-toggle" type="button" data-action="toggle" data-label="联网检索" aria-pressed="false"><span data-icon="link" class="icon--sm"></span>联网</button>
+                <span class="topbar__spacer"></span>
+                <span class="text-xs muted"><span data-role="char-count">0</span> 字符</span>
+                <button class="send-btn" type="submit" data-role="send" data-icon="send" title="发送（Enter）" aria-label="发送"></button>
+              </div>
+            </div>
+            <p class="composer__tip"><span data-icon="warning" class="icon--sm"></span>原型阶段为本地模拟输出，未接入任何模型；答案与引用来源均为示例数据。</p>
+          </form>
+        </div>
+
+        <!-- 参数面板：建议实现为 components/business/ChatParamsPanel.vue -->
+        <aside class="panel" aria-label="会话参数">
+          <div class="panel__head">
+            <h2>会话参数</h2>
+            <button class="icon-btn" type="button" data-role="panel-close" data-icon="close" title="收起右侧面板" aria-label="收起右侧面板"></button>
+          </div>
+          <div class="panel__body">
+            <div class="panel__section">
+              <h3><span data-icon="bolt" class="icon--sm"></span>模型</h3>
+              <label class="field"><span class="field__label">推理模型</span>
+                <select class="select"><option>WS-14B · 本地 GGUF（Q4_K_M）</option><option>WS-7B · 本地（更快）</option><option>云端兜底 · OpenAI 兼容接口</option></select>
+              </label>
+              <label class="field"><span class="field__label">温度 <span class="muted">0.7</span></span><input class="slider" type="range" min="0" max="2" step="0.1" value="0.7"></label>
+              <label class="field"><span class="field__label">最大输出 token</span><input class="input" type="number" value="2048"></label>
+            </div>
+
+            <div class="panel__section">
+              <h3><span data-icon="book" class="icon--sm"></span>知识来源</h3>
+              <button class="row" type="button" data-action="toggle" data-label="架构决策库" aria-pressed="true"><span class="file-type">MD</span><span class="row__main"><span class="row__title">架构决策库</span><span class="row__meta">5 篇 · 66 片</span></span><span class="pill pill--success">已选</span></button>
+              <button class="row" type="button" data-action="toggle" data-label="代码片段库" aria-pressed="true"><span class="file-type file-type--md">MD</span><span class="row__main"><span class="row__title">代码片段库</span><span class="row__meta">3 篇 · 41 片</span></span><span class="pill pill--success">已选</span></button>
+              <button class="row" type="button" data-action="toggle" data-label="产品与需求" aria-pressed="false"><span class="file-type file-type--pdf">PDF</span><span class="row__main"><span class="row__title">产品与需求</span><span class="row__meta">4 篇 · 140 片</span></span><span class="pill">未选</span></button>
+              <div class="cluster">
+                <span class="chip pill--no-dot pill--info">Top-K 3</span>
+                <span class="chip pill--no-dot pill--info">阈值 0.55</span>
+                <span class="chip pill--no-dot">重排 bge-reranker</span>
+              </div>
+            </div>
+
+            <div class="panel__section">
+              <h3><span data-icon="user" class="icon--sm"></span>系统提示词</h3>
+              <textarea class="textarea" rows="4">你是个人工作台助手。回答用中文，先给结论再给步骤；引用知识库时必须标注来源文件名；不确定时明确说明，不要编造。</textarea>
+            </div>
+
+            <div class="panel__section">
+              <h3><span data-icon="db" class="icon--sm"></span>上下文占用</h3>
+              <div class="meter"><div class="meter__fill meter__fill--info" style="width:20%"></div></div>
+              <dl class="kv">
+                <dt>系统提示词</dt><dd>186</dd>
+                <dt>历史消息</dt><dd>3.1k</dd>
+                <dt>召回分片</dt><dd>3.1k</dd>
+                <dt>剩余窗口</dt><dd>25.6k</dd>
+              </dl>
+              <p class="card__hint">超窗时策略：按轮次截断 + 保留最近一次引用来源，触发前给出提示条。</p>
+            </div>
+
+            <div class="panel__section">
+              <h3><span data-icon="trash" class="icon--sm"></span>危险操作</h3>
+              <button class="btn btn--danger btn--block" type="button" data-action="new-chat">清空并新建会话</button>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="assets/prototype.js"></script>
+</body>
+</html>

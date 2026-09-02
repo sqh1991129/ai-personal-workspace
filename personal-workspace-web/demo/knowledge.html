@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>知识库模块 · 个人 AI 工作台（原型）</title>
+<meta name="description" content="AI 知识库静态原型：知识库切换、文档索引状态、上传队列、分片详情、召回测试。">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/prototype.css">
+<link rel="stylesheet" href="assets/modules.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <a class="sidebar__brand" href="index.html"><span class="sidebar__mark">WS</span><span>个人 AI 工作台</span></a>
+    <nav class="sidebar__nav" aria-label="主导航">
+      <a class="nav-item" href="index.html"><span data-icon="grid"></span><span class="nav-item__text">总览</span></a>
+      <a class="nav-item" href="chat.html"><span data-icon="chat"></span><span class="nav-item__text">对话</span><span class="nav-item__count">12</span></a>
+      <a class="nav-item is-active" href="knowledge.html" aria-current="page"><span data-icon="book"></span><span class="nav-item__text">知识库</span><span class="nav-item__count">4</span></a>
+      <p class="sidebar__label">规划中</p>
+      <a class="nav-item is-soon" href="#todo" title="本原型未包含，仅占位"><span data-icon="task"></span><span class="nav-item__text">任务自动化</span></a>
+      <a class="nav-item is-soon" href="#todo" title="本原型未包含，仅占位"><span data-icon="settings"></span><span class="nav-item__text">设置</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <div class="profile">
+        <span class="avatar">全</span>
+        <span class="profile__meta"><span class="row__title">sunquanhu</span><span class="row__meta">本地部署 · v0.1.0</span></span>
+      </div>
+      <p class="text-xs muted">数据仅存于浏览器内存，不会发往任何后端。</p>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn" type="button" data-role="sidebar-toggle" data-icon="panel" title="折叠侧栏" aria-label="折叠侧栏"></button>
+      <div class="topbar__title">
+        <h1>知识库</h1>
+        <p>views/KnowledgeView.vue</p>
+      </div>
+      <span class="topbar__spacer"></span>
+      <div class="segmented" data-role="layout-switch" role="tablist" aria-label="布局切换">
+        <button type="button" data-layout="two-col" role="tab">双栏</button>
+        <button type="button" data-layout="one-col" role="tab">专注</button>
+      </div>
+      <label class="search" style="width:200px">
+        <span data-icon="search" class="icon--sm"></span>
+        <input class="input" data-role="global-search" type="search" placeholder="搜索会话、文档" aria-label="全局搜索">
+        <kbd class="kbd">⌘K</kbd>
+      </label>
+      <button class="icon-btn" type="button" data-role="theme-toggle" title="切换到深色" aria-label="切换到深色"></button>
+    </header>
+
+    <main class="page">
+      <section class="module" data-module="knowledge" data-layout="two-col" aria-label="知识库模块">
+
+        <!-- 知识库列表：建议实现为 components/business/KbList.vue -->
+        <aside class="rail" aria-label="知识库列表">
+          <div class="rail__head">
+            <button class="btn btn--primary btn--block" type="button" data-action="new-kb"><span data-icon="plus" class="icon--sm"></span>新建知识库</button>
+            <label class="search"><span data-icon="search" class="icon--sm"></span><input class="input" type="search" placeholder="搜索知识库" aria-label="搜索知识库"></label>
+          </div>
+          <div class="rail__body">
+            <button class="row is-active" type="button" data-action="open-kb" data-kb="kb-arch"><span data-icon="book" class="icon--sm"></span><span class="row__main"><span class="row__title">架构决策库</span><span class="row__meta">5 篇 · 66 片</span></span><span class="pill pill--success">可用</span></button>
+            <button class="row" type="button" data-action="open-kb" data-kb="kb-product"><span data-icon="book" class="icon--sm"></span><span class="row__main"><span class="row__title">产品与需求</span><span class="row__meta">4 篇 · 140 片</span></span><span class="pill pill--success">可用</span></button>
+            <button class="row" type="button" data-action="open-kb" data-kb="kb-personal"><span data-icon="book" class="icon--sm"></span><span class="row__main"><span class="row__title">个人笔记</span><span class="row__meta">3 篇 · 58 片</span></span><span class="pill pill--warning">待同步</span></button>
+            <button class="row" type="button" data-action="open-kb" data-kb="kb-code"><span data-icon="book" class="icon--sm"></span><span class="row__main"><span class="row__title">代码片段库</span><span class="row__meta">3 篇 · 41 片</span></span><span class="pill pill--info">索引中</span></button>
+            <p class="rail__label">索引服务</p>
+            <div class="card" style="gap:var(--space-2);display:grid">
+              <div class="cluster" style="justify-content:space-between"><span class="text-sm">队列</span><span class="pill pill--info pill--no-dot">4 个任务</span></div>
+              <div class="meter"><div class="meter__fill meter__fill--info" style="width:62%"></div></div>
+              <dl class="kv"><dt>向量模型</dt><dd>bge-m3</dd><dt>分片</dt><dd>512 / 64</dd><dt>磁盘</dt><dd>1.8 / 20 GB</dd></dl>
+            </div>
+          </div>
+        </aside>
+
+        <div class="kb-main">
+          <div class="kb-head">
+            <div class="kb-head__top">
+              <h2 data-role="kb-name">架构决策库</h2>
+              <span class="pill pill--success">已启用检索</span>
+              <span class="topbar__spacer"></span>
+              <button class="btn btn--sm" type="button" data-action="reindex"><span data-icon="refresh" class="icon--sm"></span>重建索引</button>
+              <button class="btn btn--sm" type="button" data-action="upload"><span data-icon="upload" class="icon--sm"></span>上传文档</button>
+              <button class="icon-btn" type="button" data-icon="more" title="更多操作" aria-label="更多操作"></button>
+            </div>
+            <p class="muted text-sm" data-role="kb-desc" style="margin:0">ADR、技术选型记录、接口约定。回答技术方案类问题时优先召回。</p>
+            <div class="kb-metrics">
+              <span>文档 <b data-role="kb-doc-count">5</b></span>
+              <span>分片 <b data-role="kb-chunk-count">66</b></span>
+              <span>已索引 <b data-role="kb-ready-count">3/5</b></span>
+              <span>最近更新 <b>今天 09:12</b></span>
+              <span>对话可引用 <b>是</b></span>
+            </div>
+          </div>
+
+          <div class="kb-body">
+            <div class="stack">
+
+              <div class="dropzone" data-role="dropzone" tabindex="0" role="button" aria-label="上传文档（点击模拟）">
+                <span class="icon icon--lg" data-icon="upload"></span>
+                <strong>拖拽文件到此处，或点击模拟上传</strong>
+                <span class="text-xs">支持 PDF / DOCX / MD / TXT / URL，单文件 ≤ 50 MB · 上传后自动解析 → 分片 → 向量化</span>
+              </div>
+              <div class="uploader" data-role="upload-queue" aria-live="polite"></div>
+
+              <div class="card" id="doc-detail">
+                <div class="card__head">
+                  <div class="segmented" data-role="status-tabs" role="tablist" aria-label="按索引状态筛选">
+                    <button type="button" role="tab" data-role="status-tab" data-value="all" aria-selected="true">全部</button>
+                    <button type="button" role="tab" data-role="status-tab" data-value="ready" aria-selected="false">已索引</button>
+                    <button type="button" role="tab" data-role="status-tab" data-value="indexing" aria-selected="false">索引中</button>
+                    <button type="button" role="tab" data-role="status-tab" data-value="pending" aria-selected="false">排队中</button>
+                    <button type="button" role="tab" data-role="status-tab" data-value="failed" aria-selected="false">失败</button>
+                  </div>
+                  <span class="topbar__spacer"></span>
+                  <label class="search" style="width:220px"><span data-icon="search" class="icon--sm"></span><input class="input" data-role="doc-search" type="search" placeholder="搜索文档名" aria-label="搜索文档名"></label>
+                  <span class="chip pill--no-dot" data-role="status-filter" data-value="all"><span data-icon="filter" class="icon--sm"></span>全部状态</span>
+                </div>
+
+                <div class="table">
+                  <div class="table__head">
+                    <span>文档</span><span>大小</span><span>分片</span><span>索引状态</span><span>更新时间</span><span>向量模型</span><span></span>
+                  </div>
+                  <div data-role="doc-list">
+                    <button class="doc-row is-selected" type="button" data-action="open-doc" data-name="ADR-001 采用 Vue CLI 5 而非 Vite.docx" data-type="DOCX" data-status="ready">
+                      <span class="doc-name"><span class="file-type">DOCX</span><span>ADR-001 采用 Vue CLI 5 而非 Vite.docx</span></span>
+                      <span class="muted">48 KB</span><span class="muted">12 片</span>
+                      <span><span class="pill pill--success">已索引</span></span>
+                      <span class="muted">2 小时前</span><span class="muted">bge-m3</span>
+                      <span class="muted"><span data-icon="more" class="icon--sm"></span></span>
+                    </button>
+                    <button class="doc-row" type="button" data-action="open-doc" data-name="AGENTS.md 前端约束汇编.md" data-type="MD" data-status="ready">
+                      <span class="doc-name"><span class="file-type file-type--md">MD</span><span>AGENTS.md 前端约束汇编.md</span></span>
+                      <span class="muted">9 KB</span><span class="muted">7 片</span>
+                      <span><span class="pill pill--success">已索引</span></span>
+                      <span class="muted">5 小时前</span><span class="muted">bge-m3</span>
+                      <span class="muted"><span data-icon="more" class="icon--sm"></span></span>
+                    </button>
+                    <button class="doc-row" type="button" data-action="open-doc" data-name="后端接口约定 v0.md" data-type="MD" data-status="indexing">
+                      <span class="doc-name"><span class="file-type file-type--md">MD</span><span>后端接口约定 v0.md</span></span>
+                      <span class="muted">14 KB</span><span class="muted">18 片</span>
+                      <span><span class="pill pill--info">索引中</span></span>
+                      <span class="muted">今天 09:12</span><span class="muted">—</span>
+                      <span class="muted"><span data-icon="more" class="icon--sm"></span></span>
+                    </button>
+                    <button class="doc-row" type="button" data-action="open-doc" data-name="请求层时序图（外链）" data-type="URL" data-status="ready">
+                      <span class="doc-name"><span class="file-type file-type--url">URL</span><span>请求层时序图（外链）</span></span>
+                      <span class="muted">—</span><span class="muted">3 片</span>
+                      <span><span class="pill pill--success">已索引</span></span>
+                      <span class="muted">昨天 21:40</span><span class="muted">bge-m3</span>
+                      <span class="muted"><span data-icon="more" class="icon--sm"></span></span>
+                    </button>
+                    <button class="doc-row" type="button" data-action="open-doc" data-name="风险清单 R1-R7.pdf" data-type="PDF" data-status="failed">
+                      <span class="doc-name"><span class="file-type file-type--pdf">PDF</span><span>风险清单 R1-R7.pdf</span></span>
+                      <span class="muted">860 KB</span><span class="muted">26 片</span>
+                      <span><span class="pill pill--danger">解析失败</span></span>
+                      <span class="muted">昨天 18:05</span><span class="muted">—</span>
+                      <span class="muted"><span data-icon="more" class="icon--sm"></span></span>
+                    </button>
+                  </div>
+                  <p class="empty" data-role="doc-empty" hidden><span data-icon="search"></span>没有匹配的文档，试试更换关键词或状态筛选。</p>
+                </div>
+                <p class="card__hint">状态机：<code>排队中 → 解析中 → 分片中 → 向量化 → 已索引</code>，任一环节失败进入 <code>解析失败</code> 并可重试。表格行点击即打开右侧详情抽屉。</p>
+              </div>
+
+              <!-- 召回测试：建议实现为 components/business/RecallTester.vue -->
+              <div class="recall">
+                <div class="card__head" style="margin-bottom:0">
+                    <h3><span data-icon="flask" class="icon--sm"></span> 召回测试</h3>
+                  <span class="text-xs muted">调参用，结果不写入会话历史</span>
+                </div>
+                <div class="askbox__row">
+                  <input class="input" data-role="recall-input" type="search" value="对话模块的流式响应怎么做？" aria-label="检索语句" placeholder="输入一句自然语言，测试知识库召回质量">
+                  <button class="btn btn--primary" type="button" data-action="recall"><span data-icon="search" class="icon--sm"></span>运行检索</button>
+                </div>
+                <div class="cluster">
+                  <label class="field" style="width:110px"><span class="field__label">Top-K</span><input class="input" type="number" value="3" min="1" max="20"></label>
+                  <label class="field" style="width:130px"><span class="field__label">相似度阈值</span><input class="input" type="number" value="0.55" step="0.05"></label>
+                  <button class="tool-toggle" type="button" data-action="toggle" data-label="混合检索" aria-pressed="true"><span data-icon="db" class="icon--sm"></span>向量 + BM25</button>
+                  <button class="tool-toggle" type="button" data-action="toggle" data-label="重排序" aria-pressed="true"><span data-icon="bolt" class="icon--sm"></span>bge-reranker</button>
+                </div>
+                <div class="stack" data-role="recall-results">
+                  <p class="text-xs muted">检索语句：<span class="inline-code">对话模块的流式响应怎么做？</span> · 向量模型 bge-m3 · Top-K 3 · 阈值 0.55 · 耗时 118ms</p>
+                  <div class="recall__hit">
+                    <header><b>ADR-001 采用 Vue CLI 5 而非 Vite</b><span class="chip">第 4 / 12 片</span><span class="recall__score">0.92</span></header>
+                    <div class="meter"><div class="meter__fill" style="width:92%"></div></div>
+                    <p>对话接口统一走 <mark>SSE 流式</mark>，前端用 fetch + ReadableStream 解析增量，超时上限沿用 15s。</p>
+                  </div>
+                  <div class="recall__hit">
+                    <header><b>后端接口约定 v0</b><span class="chip">第 2 / 18 片</span><span class="recall__score">0.81</span></header>
+                    <div class="meter"><div class="meter__fill" style="width:81%"></div></div>
+                    <p><mark>/chat/completions</mark> 返回 delta 数组，末包携带 usage 与 citations，用于渲染引用来源。</p>
+                  </div>
+                  <div class="recall__hit">
+                    <header><b>AGENTS.md 前端约束汇编</b><span class="chip">第 1 / 7 片</span><span class="recall__score">0.63</span></header>
+                    <div class="meter"><div class="meter__fill meter__fill--warning" style="width:63%"></div></div>
+                    <p>组件不得直接 import axios，只经 <mark>src/api/http.js</mark>；流式逻辑下沉到 composables/useChatStream.js。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- 文档详情抽屉：建议实现为 components/base/Drawer.vue + business/ChunkList.vue -->
+<div class="scrim" data-role="scrim"></div>
+<aside class="drawer" data-role="doc-drawer" aria-label="文档详情">
+  <div class="drawer__head">
+    <h2><span data-icon="file" class="icon--sm"></span><span data-role="drawer-name">ADR-001 采用 Vue CLI 5 而非 Vite.docx</span></h2>
+    <button class="icon-btn" type="button" data-action="close-drawer" data-icon="close" title="关闭" aria-label="关闭"></button>
+  </div>
+  <div class="drawer__body stack">
+    <div class="cluster">
+      <span class="pill pill--success" data-role="drawer-status">已索引</span>
+      <span class="chip pill--no-dot" data-role="drawer-type">DOCX · 分片 512/64</span>
+      <span class="chip pill--no-dot pill--info">对话可引用</span>
+    </div>
+    <dl class="kv">
+      <dt>来源</dt><dd>本地文件</dd>
+      <dt>大小</dt><dd>48 KB</dd>
+      <dt>页数 / 字数</dt><dd>7 / 4,182</dd>
+      <dt>分片数</dt><dd>12</dd>
+      <dt>向量模型</dt><dd>bge-m3 · 1024 维</dd>
+      <dt>入库时间</dt><dd>今天 09:04</dd>
+      <dt>被引用次数</dt><dd>7 次 / 3 个会话</dd>
+    </dl>
+    <div class="cluster">
+      <button class="btn btn--sm" type="button" data-action="preview"><span data-icon="eye" class="icon--sm"></span>预览原文</button>
+      <button class="btn btn--sm" type="button" data-action="reindex"><span data-icon="refresh" class="icon--sm"></span>重新索引</button>
+      <button class="btn btn--danger btn--sm" type="button" data-action="delete-doc"><span data-icon="trash" class="icon--sm"></span>移除</button>
+    </div>
+    <div class="divider"></div>
+    <h3 class="card__title">分片预览</h3>
+    <div>
+      <div class="chunk"><p class="chunk__index"><span class="chip pill--no-dot">第 1 片</span><span>0–512 字 · 命中率 0.34</span></p><p class="chunk__text">本记录讨论构建链选型：Vue CLI 5（webpack 5）与 Vite 的取舍。结论是保留 Vue CLI，团队已有 webpack 配置经验，且 Vite 与 <span class="inline-code">@vue/cli-plugin-eslint</span> 的集成不成熟。</p></div>
+      <div class="chunk"><p class="chunk__index"><span class="chip pill--no-dot">第 4 片</span><span>1,536–2,048 字 · 命中率 0.92</span></p><p class="chunk__text">对话接口统一走 SSE 流式，前端用 fetch + ReadableStream 解析增量，超时上限沿用 15s；不使用 axios 的 stream responseType。</p></div>
+      <div class="chunk"><p class="chunk__index"><span class="chip pill--no-dot">第 9 片</span><span>3,584–4,096 字 · 命中率 0.51</span></p><p class="chunk__text">知识库检索参数默认 Top-K=3、阈值 0.55，可在会话参数面板按会话覆盖；系统级默认值来自环境变量 <span class="inline-code">VUE_APP_RETRIEVAL_TOPK</span>（待引入）。</p></div>
+    </div>
+    <p class="card__hint">抽屉内容对应接口 <code>GET /api/documents/{id}/chunks?page=1</code>；长文档按需分页，不要一次拉全部向量。</p>
+  </div>
+</aside>
+
+<script src="assets/prototype.js"></script>
+</body>
+</html>

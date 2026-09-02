@@ -1,7 +1,7 @@
 {
   "profile": "personal-workspace-web/project-profile",
   "profileVersion": 2,
-  "updatedAt": "2026-09-01",
+  "updatedAt": "2026-09-02",
   "phase": "P0-done",
   "humanAnalysis": "docs/PROJECT_ANALYSIS.md",
   "agentInstructions": "AGENTS.md",
@@ -109,7 +109,7 @@
     "jsconfigTargetConflictsBrowserslist": true
   },
   "structure": {
-    "root": ["AGENTS.md", "README.md", "package.json", "package-lock.json", "vue.config.js", "babel.config.js", "jsconfig.json", ".env.development", ".env.production", ".gitignore", "docs", "public", "src"],
+    "root": ["AGENTS.md", "README.md", "package.json", "package-lock.json", "vue.config.js", "babel.config.js", "jsconfig.json", ".env.development", ".env.production", ".gitignore", "docs", "demo", "public", "src"],
     "public": ["index.html", "favicon.ico"],
     "src": {
       "files": [
@@ -129,7 +129,14 @@
       "directories": ["src/router", "src/stores", "src/api", "src/views", "src/components/base", "src/styles", "src/assets"],
       "notYetCreated": ["src/composables", "src/components/business", "src/utils", "src/constants"]
     },
-    "sibling": [{ "path": "personal-workspace-app/index.py", "state": "empty-file", "note": "后端占位，接口契约仍未定义" }]
+    "sibling": [{ "path": "personal-workspace-app/index.py", "state": "empty-file", "note": "后端占位，接口契约仍未定义" }],
+    "demo": {
+      "purpose": "零依赖静态 HTML 原型：对话模块 + 知识库模块，供后续 Vue 开发对照落地",
+      "files": ["demo/index.html", "demo/chat.html", "demo/knowledge.html", "demo/assets/tokens.css", "demo/assets/prototype.css", "demo/assets/modules.css", "demo/assets/prototype.js", "demo/README.md"],
+      "screenshots": "demo/shots/（1440x900，浅/深主题 + 空状态 / 停止生成 / 请求失败 / 分片抽屉）",
+      "buildImpact": "不参与 serve/build，不在 ESLint 的 src 范围内",
+      "tokensExtension": "demo/assets/tokens.css 下半段为原型扩展令牌，开发时按需并入 src/styles/global.css"
+    }
   },
   "verified": {
     "lintPassed": true,
@@ -158,6 +165,7 @@
     { "id": "R4", "priority": "P1", "status": "resolved", "path": "src/stores", "problem": "无状态管理", "resolution": "pinia + app store（主题/侧栏）" },
     { "id": "R5", "priority": "P1", "status": "resolved", "path": "src/api", "problem": "无请求层与环境配置", "resolution": "axios 实例 + .env.* + devServer 代理" },
     { "id": "R9", "priority": "P2", "status": "resolved", "path": "vue.config.js", "problem": "生产 source map 默认外泄", "resolution": "productionSourceMap: false" },
+    { "id": "R12", "priority": "P2", "status": "mitigated", "path": "demo/", "problem": "对话与知识库缺少统一界面口径，易各写各的", "resolution": "补 demo/ 静态原型（含示例图与区域→代码落点对照表）" },
     { "id": "R6", "priority": "P1", "status": "open", "path": "src/api", "problem": "AI 流式响应（SSE / fetch stream）封装缺失", "next": "在 api 层实现流式客户端，经 composables 暴露" },
     { "id": "R10", "priority": "P1", "status": "open", "path": "personal-workspace-app", "problem": "后端 index.py 为空，接口契约未定义，前端会话/对话功能无法联调", "next": "先定义 /api/health 与聊天接口契约（含流式协议）" },
     { "id": "R7", "priority": "P2", "status": "open", "path": "package.json", "problem": "无 UI 组件库；sidebarCollapsed 尚无消费方；缺布局壳与品牌资源", "next": "确认 element-plus 或自研，补侧栏布局与 favicon/logo" },

@@ -43,9 +43,16 @@ src/
 └── styles/global.css       # 设计令牌与基础样式
 ```
 
+## 界面原型
+
+`demo/` 是零依赖静态 HTML 原型（**对话模块** + **知识库模块** + 工作台总览），不参与 `serve` / `build`。
+双击 `demo/index.html` 即可离线浏览，明暗主题、三栏/两栏布局、流式输出与召回测试均可交互；
+`demo/shots/` 是 1440×900 示例图，`demo/README.md` 给出「原型区域 → 建议代码落点」对照表。
+
 ## 文档
 
 - `AGENTS.md`：开发与协作约定（新代码必读）。
+- `demo/README.md`：界面原型说明与模块落地对照表。
 - `docs/PROJECT_ANALYSIS.md`：完整技术栈分析、风险清单与分期路线图。
 - `docs/project-profile.json`：结构化项目档案，供任务开发读取校验。
 

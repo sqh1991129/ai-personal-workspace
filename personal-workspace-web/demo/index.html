@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工作台总览 · 个人 AI 工作台（原型）</title>
+<meta name="description" content="个人 AI 工作台静态原型：总览 / 对话 / 知识库，供前端开发参考。">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/prototype.css">
+<link rel="stylesheet" href="assets/modules.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <a class="sidebar__brand" href="index.html"><span class="sidebar__mark">WS</span><span>个人 AI 工作台</span></a>
+    <nav class="sidebar__nav" aria-label="主导航">
+      <a class="nav-item is-active" href="index.html" aria-current="page"><span data-icon="grid"></span><span class="nav-item__text">总览</span></a>
+      <a class="nav-item" href="chat.html"><span data-icon="chat"></span><span class="nav-item__text">对话</span><span class="nav-item__count">12</span></a>
+      <a class="nav-item" href="knowledge.html"><span data-icon="book"></span><span class="nav-item__text">知识库</span><span class="nav-item__count">4</span></a>
+      <p class="sidebar__label">规划中</p>
+      <a class="nav-item is-soon" href="#todo" title="本原型未包含，仅占位"><span data-icon="task"></span><span class="nav-item__text">任务自动化</span></a>
+      <a class="nav-item is-soon" href="#todo" title="本原型未包含，仅占位"><span data-icon="settings"></span><span class="nav-item__text">设置</span></a>
+    </nav>
+    <div class="sidebar__foot">
+      <div class="profile">
+        <span class="avatar">全</span>
+        <span class="profile__meta"><span class="row__title">sunquanhu</span><span class="row__meta">本地部署 · v0.1.0</span></span>
+      </div>
+      <p class="text-xs muted">数据仅存于浏览器内存，不会发往任何后端。</p>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn" type="button" data-role="sidebar-toggle" data-icon="panel" title="折叠侧栏" aria-label="折叠侧栏"></button>
+      <div class="topbar__title">
+        <h1>总览</h1>
+        <p>views/WorkspaceView.vue</p>
+      </div>
+      <span class="topbar__spacer"></span>
+      <label class="search" style="width:240px">
+        <span data-icon="search" class="icon--sm"></span>
+        <input class="input" data-role="global-search" type="search" placeholder="搜索会话、文档、指令" aria-label="全局搜索">
+        <kbd class="kbd">⌘K</kbd>
+      </label>
+      <button class="icon-btn" type="button" data-role="theme-toggle" title="切换到深色" aria-label="切换到深色"></button>
+    </header>
+
+    <main class="page page--padded">
+      <div class="ov">
+
+        <section class="ov__hero">
+          <h2>下午好，quanhu</h2>
+          <p>本地模型 WS-14B 已加载 · 4 个知识库 / 15 篇文档 / 305 个分片（11 篇已完成索引） · 今日已用 1.24M tokens</p>
+          <form class="askbox" data-role="askbox">
+            <label class="field__label" for="ask">向工作台提问</label>
+            <textarea id="ask" rows="1" placeholder="例如：把这周的知识库新增文档整理成摘要，并给出下一步计划"></textarea>
+            <div class="askbox__row">
+              <div class="cluster">
+                <button class="tool-toggle" type="button" data-action="toggle" data-label="知识库检索" aria-pressed="true"><span data-icon="book" class="icon--sm"></span>知识库</button>
+                <button class="tool-toggle" type="button" data-action="toggle" data-label="深度思考" aria-pressed="false"><span data-icon="flask" class="icon--sm"></span>深度思考</button>
+                <button class="tool-toggle" type="button" data-action="toggle" data-label="联网检索" aria-pressed="false"><span data-icon="link" class="icon--sm"></span>联网</button>
+              </div>
+              <span class="topbar__spacer"></span>
+              <span class="text-xs muted">Enter 开始新会话</span>
+              <button class="send-btn" type="submit" data-icon="send" title="发送" aria-label="发送"></button>
+            </div>
+          </form>
+          <div class="cluster" style="margin-top:var(--space-3)">
+            <span class="text-xs muted">快捷入口</span>
+            <button class="chip chip--clickable" type="button" data-action="fill-prompt" data-prompt="帮我把 AGENTS.md 的约束整理成一页检查清单">生成检查清单</button>
+            <button class="chip chip--clickable" type="button" data-action="fill-prompt" data-prompt="总结本周知识库新增的文档，按主题聚类">本周知识摘要</button>
+            <button class="chip chip--clickable" type="button" data-action="fill-prompt" data-prompt="对话模块的流式响应接口应该怎么设计？">接口设计咨询</button>
+          </div>
+        </section>
+
+        <section class="ov__grid" aria-label="今日概览">
+          <article class="card stat">
+            <p class="stat__label">今日对话</p>
+            <p class="stat__value">18<span class="stat__delta">+12%</span></p>
+            <svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
+              <polygon points="0,28 12,24 24,26 36,18 48,20 60,12 72,15 84,8 100,10 100,34 0,34"></polygon>
+              <polyline points="0,28 12,24 24,26 36,18 48,20 60,12 72,15 84,8 100,10"></polyline>
+            </svg>
+          </article>
+          <article class="card stat">
+            <p class="stat__label">知识库文档</p>
+            <p class="stat__value">15<span class="stat__delta">+2</span></p>
+            <svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
+              <polygon points="0,30 20,28 40,22 60,20 80,12 100,14 100,34 0,34"></polygon>
+              <polyline points="0,30 20,28 40,22 60,20 80,12 100,14"></polyline>
+            </svg>
+          </article>
+          <article class="card stat">
+            <p class="stat__label">平均首字延迟</p>
+            <p class="stat__value">860<span class="muted text-sm">ms</span><span class="stat__delta">-8%</span></p>
+            <svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
+              <polygon points="0,10 20,14 40,12 60,20 80,24 100,26 100,34 0,34"></polygon>
+              <polyline points="0,10 20,14 40,12 60,20 80,24 100,26"></polyline>
+            </svg>
+          </article>
+          <article class="card stat">
+            <p class="stat__label">今日 token</p>
+            <p class="stat__value">1.24<span class="muted text-sm">M</span><span class="stat__delta stat__delta--down">+31%</span></p>
+            <svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true">
+              <polygon points="0,26 20,24 40,26 60,16 80,18 100,6 100,34 0,34"></polygon>
+              <polyline points="0,26 20,24 40,26 60,16 80,18 100,6"></polyline>
+            </svg>
+          </article>
+        </section>
+
+        <section class="ov__grid" aria-label="工作区">
+          <article class="card">
+            <div class="card__head"><h3>最近会话</h3><a class="btn btn--ghost btn--sm" href="chat.html">进入对话</a></div>
+            <div class="stack" style="gap:var(--space-1)">
+              <a class="row" href="chat.html"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">对话模块流式接口设计</span><span class="row__meta">12 条消息 · 引用 3 个来源 · 10:24</span></span><span class="pill pill--success">活跃</span></a>
+              <a class="row" href="chat.html"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">知识库分片策略评审</span><span class="row__meta">8 条消息 · 昨天 21:36</span></span></a>
+              <a class="row" href="chat.html"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">周报草稿：前端基建进展</span><span class="row__meta">21 条消息 · 8 月 31 日</span></span></a>
+              <a class="row" href="chat.html"><span data-icon="chat" class="icon--sm"></span><span class="row__main"><span class="row__title">RAG 召回率偏低的排查</span><span class="row__meta">6 条消息 · 8 月 29 日</span></span></a>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card__head"><h3>知识库健康度</h3><a class="btn btn--ghost btn--sm" href="knowledge.html">进入知识库</a></div>
+            <div class="stack" style="gap:var(--space-2)">
+              <div>
+                <div class="cluster" style="justify-content:space-between"><span class="text-sm">索引完成率</span><span class="text-sm muted">11 / 15</span></div>
+                <div class="meter"><div class="meter__fill" style="width:73%"></div></div>
+              </div>
+              <dl class="kv">
+                <dt>待处理队列</dt><dd>4 篇</dd>
+                <dt>解析失败</dt><dd class="muted" style="color:var(--color-danger)">1 篇</dd>
+                <dt>向量模型</dt><dd>bge-m3 · 1024 维</dd>
+                <dt>分片参数</dt><dd>512 / overlap 64</dd>
+                <dt>存储占用</dt><dd>1.8 GB</dd>
+              </dl>
+              <p class="card__hint">失败文档需在知识库页重新解析；「对话」引用它们时会降级为无来源回答。</p>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card__head"><h3>今日待办</h3><span class="pill pill--no-dot">3 / 6</span></div>
+            <ul class="mini-list checklist">
+              <li><span class="tick is-done" data-icon="check"></span><span class="row__main"><span class="row__title">确认对话页三栏布局断点</span><span class="row__meta">前端 · 今天 18:00</span></span></li>
+              <li><span class="tick is-done" data-icon="check"></span><span class="row__main"><span class="row__title">补全 VUE_APP_* 环境变量表</span><span class="row__meta">文档 · 已完成</span></span></li>
+              <li><span class="tick is-done" data-icon="check"></span><span class="row__main"><span class="row__title">输出知识库原型稿</span><span class="row__meta">本页面即是产出</span></span></li>
+              <li><span class="tick"></span><span class="row__main"><span class="row__title">定义聊天消息数据契约</span><span class="row__meta">后端联调前</span></span></li>
+              <li><span class="tick"></span><span class="row__main"><span class="row__title">接入健康检查真实接口</span><span class="row__meta">等待后端 /api/health</span></span></li>
+              <li><span class="tick"></span><span class="row__main"><span class="row__title">评估 vitest 基线用例</span><span class="row__meta">未开始</span></span></li>
+            </ul>
+          </article>
+        </section>
+
+        <section>
+          <div class="section-title"><h2>原型站点地图</h2><span class="text-xs muted">三个页面共享同一外壳，可任意顺序浏览</span></div>
+          <div class="sitemap">
+            <a class="sitemap__item" href="index.html"><h3><span data-icon="grid"></span>工作台总览</h3><p>问候语、统一提问入口、今日指标、跨模块跳转。对应 <code>views/HomeView.vue</code> 的演进形态。</p></a>
+            <a class="sitemap__item" href="chat.html"><h3><span data-icon="chat"></span>对话模块</h3><p>会话列表 / 消息流（流式、思考、代码块、引用来源）/ 参数面板 / 输入区。支持三栏↔两栏↔单栏切换。</p></a>
+            <a class="sitemap__item" href="knowledge.html"><h3><span data-icon="book"></span>知识库模块</h3><p>知识库切换、文档表格与索引状态、上传队列、分片详情抽屉、召回测试面板。</p></a>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card__head"><h3>区域 → 代码落点对照</h3><span class="text-xs muted">按 AGENTS.md 的目录职责约定</span></div>
+          <table class="map-table">
+            <thead><tr><th>原型区域</th><th>建议文件</th><th>状态来源</th><th>接口</th></tr></thead>
+            <tbody>
+              <tr><td>外壳 / 侧栏 / 主题</td><td><code>src/App.vue</code></td><td><code>stores/app.js</code></td><td>—</td></tr>
+              <tr><td>对话消息流 + 输入区</td><td><code>src/views/ChatView.vue</code></td><td><code>stores/chat.js</code> · <code>composables/useChatStream.js</code></td><td><code>POST /api/chat/completions</code>（SSE）</td></tr>
+              <tr><td>会话列表 / 参数面板</td><td><code>src/components/business/SessionList.vue</code>、<code>ChatParamsPanel.vue</code></td><td><code>stores/chat.js</code></td><td><code>GET /api/chat/sessions</code></td></tr>
+              <tr><td>知识库列表 + 文档表格</td><td><code>src/views/KnowledgeView.vue</code></td><td><code>stores/knowledge.js</code></td><td><code>GET /api/kb/{id}/documents</code></td></tr>
+              <tr><td>分片详情抽屉</td><td><code>src/components/base/Drawer.vue</code> + <code>business/ChunkList.vue</code></td><td>组件内 state</td><td><code>GET /api/documents/{id}/chunks</code></td></tr>
+              <tr><td>召回测试面板</td><td><code>src/components/business/RecallTester.vue</code></td><td><code>composables/useRetrieval.js</code></td><td><code>POST /api/kb/{id}/retrieve</code></td></tr>
+              <tr><td>索引状态标记</td><td><code>src/components/base/StatusPill.vue</code>（已存在）</td><td>props</td><td>—</td></tr>
+              <tr><td>设计令牌</td><td><code>src/styles/global.css</code></td><td><code>document.documentElement.dataset.theme</code></td><td>—</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="card">
+          <div class="card__head"><h3>设计令牌速览</h3><span class="text-xs muted">与 src/styles/global.css 同源，切换主题即时生效</span></div>
+          <div class="swatches">
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-bg)"></span><code>--color-bg</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-surface)"></span><code>--color-surface</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-surface-sunken)"></span><code>--color-surface-sunken</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-accent)"></span><code>--color-accent</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-accent-soft)"></span><code>--color-accent-soft</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-info)"></span><code>--color-info</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-success)"></span><code>--color-success</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-warning)"></span><code>--color-warning</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-danger)"></span><code>--color-danger</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-border)"></span><code>--color-border</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-muted)"></span><code>--color-muted</code></div>
+            <div class="swatch"><span class="swatch__chip" style="background:var(--color-text)"></span><code>--color-text</code></div>
+          </div>
+          <p class="card__hint">扩展令牌（<code>--color-surface-sunken</code>、<code>--radius-lg</code>、<code>--shadow-md</code> 等）已写在 <code>demo/assets/tokens.css</code> 下半段，落地时按需并入全局，避免在组件里写死色值。</p>
+        </section>
+
+        <p class="text-xs muted">原型文件：<code>demo/index.html</code> · <code>demo/chat.html</code> · <code>demo/knowledge.html</code>，零依赖、双击即可离线打开；所有数据均为假数据，不发起任何网络请求。</p>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="assets/prototype.js"></script>
+</body>
+</html>

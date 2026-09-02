@@ -1,0 +1,176 @@
+/* ==========================================================================
+ * 个人 AI 工作台 · 设计令牌（原型）
+ * 上半段与 src/styles/global.css 完全同源，落地时不要另起一套变量。
+ * 下半段是原型扩展令牌，标注了建议并入 src/styles/global.css 的顺序。
+ * 主题切换依赖 document.documentElement.dataset.theme（light | dark）。
+ * ========================================================================== */
+
+:root {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-text: #1f2329;
+  --color-muted: #6b7280;
+  --color-border: #e4e7ec;
+  --color-accent: #42b983;
+  --color-danger: #d92d20;
+  --color-warning: #b54708;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #16181d;
+  --color-surface: #1f2329;
+  --color-text: #eef0f3;
+  --color-muted: #9aa2af;
+  --color-border: #31363f;
+  --color-accent: #35b98a;
+  --color-danger: #f97066;
+  --color-warning: #fdb022;
+}
+
+/* --------------------------------------------------------------------------
+ * 原型扩展令牌（浅色）
+ * ------------------------------------------------------------------------ */
+:root {
+  --color-surface-sunken: #eef0f4;
+  --color-surface-raised: #ffffff;
+  --color-accent-hover: #38a876;
+  --color-accent-soft: #e7f7ef;
+  --color-on-accent: #ffffff;
+  --color-success: #067647;
+  --color-success-soft: #e6f4ea;
+  --color-info: #175cd3;
+  --color-info-soft: #eff4ff;
+  --color-warning-soft: #fef0c7;
+  --color-danger-soft: #fee4e2;
+  --color-overlay: rgba(16, 20, 26, 0.45);
+  --color-user-bubble: #dcefe5;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 6px 16px rgba(16, 24, 40, 0.1);
+  --shadow-lg: 0 18px 44px rgba(16, 24, 40, 0.18);
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --font-xs: 12px;
+  --font-sm: 13px;
+  --font-md: 14px;
+  --font-lg: 16px;
+  --font-xl: 20px;
+  --font-2xl: 26px;
+  --header-h: 56px;
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 64px;
+  --rail-w: 268px;
+  --panel-w: 320px;
+}
+
+/* --------------------------------------------------------------------------
+ * 原型扩展令牌（深色）
+ * ------------------------------------------------------------------------ */
+:root[data-theme='dark'] {
+  --color-surface-sunken: #121419;
+  --color-surface-raised: #262b33;
+  --color-accent-hover: #46cc9b;
+  --color-accent-soft: #17312a;
+  --color-on-accent: #06170f;
+  --color-success: #6ce9a6;
+  --color-success-soft: #10281d;
+  --color-info: #8ab0ff;
+  --color-info-soft: #14202f;
+  --color-warning-soft: #2f2408;
+  --color-danger-soft: #2d1214;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-user-bubble: #234034;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.6);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: Avenir, Helvetica, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  font-size: var(--font-md);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+code,
+pre,
+kbd {
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: var(--radius-pill);
+  background-clip: content-box;
+  background-color: var(--color-border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 组件用 display:grid/flex 时会盖掉 UA 的 [hidden]{display:none}，这里统一兜底 */
+[hidden] {
+  display: none !important;
+}

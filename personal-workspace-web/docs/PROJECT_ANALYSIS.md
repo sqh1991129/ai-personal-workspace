@@ -260,6 +260,31 @@ src/
 └── assets/logo.png          # 未引用，待替换
 ```
 
+### 10.3 静态原型（2026-09-02 新增 `demo/`）
+
+`demo/` 是**零依赖静态 HTML 原型**，不参与 `npm run serve` / `npm run build`，也不在 ESLint 的 `src` 范围内，
+用于在写业务代码之前冻结「对话」与「知识库」两个模块的布局、状态与交互口径。
+
+```text
+demo/
+├── index.html          # 工作台总览（统一提问入口、指标、站点地图、令牌速览）
+├── chat.html           # 对话模块（会话列表 / 消息流 / 参数面板 / 输入区）
+├── knowledge.html      # 知识库模块（库列表 / 文档表格 / 上传队列 / 分片抽屉 / 召回测试）
+├── assets/
+│   ├── tokens.css      # 设计令牌（上半段与 src/styles/global.css 同源）
+│   ├── prototype.css   # 外壳与通用组件
+│   ├── modules.css     # 三个模块各自样式
+│   └── prototype.js    # 主题 / 图标 / 布局切换 / 模块内交互（原生 JS）
+├── shots/              # 1440×900 示例图（浅/深双主题 + 空状态、停止/失败、抽屉等状态图）
+└── README.md           # 原型说明与「区域 → 代码落点」对照表
+```
+
+与 P1/P2 路线图的关系：原型已给出 `views/ChatView.vue`、`views/KnowledgeView.vue`、
+`components/business/{SessionList,MessageStream,ChatComposer,ChatParamsPanel,KbList,ChunkList,RecallTester}.vue`
+的切分建议，以及 `POST /api/chat/completions`（SSE）、`GET /api/kb/{id}/documents`、
+`POST /api/kb/{id}/retrieve` 等待实现接口的字段口径；扩展令牌清单见 `demo/assets/tokens.css` 下半段，
+正式开发时并入 `src/styles/global.css`（对应 P1「主题令牌扩展」）。
+
 ### 10.3 验证证据
 
 - `npm run lint`：**0 error**（先遇到两个真实坑，见 10.4，已修）。
