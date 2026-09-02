@@ -6,25 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="c330de87-598b-42fa-a08d-7284ad9699d8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/AGENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/demo/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/demo/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/docs/PROJECT_ANALYSIS.md" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/docs/PROJECT_ANALYSIS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/docs/project-profile.json" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/docs/project-profile.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/jsconfig.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/App.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/App.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/api/http.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/api/workspace.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/base/StatusPill.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/base/StatusPill.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/main.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/router/index.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/stores/app.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/views/HomeView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/views/HomeView.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/vue.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/vue.config.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,6 +55,9 @@
   }
 }</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/personal_workspace_app" />
     </key>
@@ -94,7 +78,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1788318837960</updated>
-      <workItem from="1788318839303" duration="9517000" />
+      <workItem from="1788318839303" duration="10110000" />
     </task>
     <servers />
   </component>
