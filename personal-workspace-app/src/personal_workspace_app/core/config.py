@@ -30,11 +30,16 @@
 # 实例化：实例化时会自动触发读取与校验
 #settings = Settings()
 
-from pydantic_settings import BaseSettings,SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
 class Settings(BaseSettings):
-      PROJECT_NAME: str = "My New Service"
-      API_V1_STR: str = "/api/v1"
-      DEBUG: bool = True
-      model_config = SettingsConfigDict(env_file=".env",env_file_encoding="utf-8", case_sensitive=True)
+    PROJECT_NAME: str = "My New Service"
+    API_V1_STR: str = "/api/v1"
+    ## PostgreSQL 连接串格式：postgresql+asyncpg://user:password@host:port/dbname
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/personal_workspace_db"
+    DEBUG: bool = True
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True)
+
 
 settings = Settings()
