@@ -1,8 +1,8 @@
 {
   "profile": "personal-workspace-web/project-profile",
-  "profileVersion": 2,
-  "updatedAt": "2026-09-02",
-  "phase": "P0-done",
+  "profileVersion": 5,
+  "updatedAt": "2026-09-03",
+  "phase": "P1-done+P2/P3-mocked",
   "humanAnalysis": "docs/PROJECT_ANALYSIS.md",
   "agentInstructions": "AGENTS.md",
   "meta": {
@@ -21,14 +21,11 @@
     "kind": "vue3-spa",
     "packageManager": "npm",
     "lockfileVersion": 3,
-    "maturity": "infra-ready-no-business-features",
-    "businessFeaturesImplemented": []
+    "maturity": "infra-ready-minimal-business",
+    "businessFeaturesImplemented": ["auth-login-mock"],
+    "businessFeaturesPending": ["chat", "knowledge"]
   },
-  "runtime": {
-    "node": "v25.7.0",
-    "npm": "11.10.1",
-    "enginesDeclared": false
-  },
+  "runtime": { "node": "v25.7.0", "npm": "11.10.1", "enginesDeclared": false },
   "dependencies": {
     "runtime": {
       "vue": "3.5.42",
@@ -68,11 +65,60 @@
     "tsTypeCheck": "vue-tsc --noEmit (npm run type-check, chained into build)",
     "cliTypescriptPlugin": false,
     "jsKeptFor": ["vue.config.js", "babel.config.js", "demo/**"],
-    "cssStrategy": "plain css + css variable tokens + scoped styles",
+    "cssStrategy": "plain css（无预处理器）+ CSS 变量令牌；三层：global.css（令牌/基础，唯一允许色值处） → primitives.css（外壳与原子，移植自 demo/prototype.css） → modules.css（三个模块，移植自 demo/modules.css）；组件专属样式仍用 <style scoped>",
     "preprocessor": null,
     "uiLibrary": null,
-    "router": { "module": "src/router/index.ts", "mode": "history", "lazyLoading": true, "titleFromMeta": true, "routeMetaAugmented": true },
-    "state": { "module": "src/stores/app.ts", "persisted": ["workspace.theme"] },
+    "router": {
+      "module": "src/router/routes.ts（表与 meta）+ guards.ts（登录守卫）+ index.ts（装配与标题）",
+      "mode": "history",
+      "lazyLoading": true,
+      "titleFromMeta": true,
+      "routeMetaAugmented": true,
+      "routeMetaKeys": ["title", "requiresAuth", "layout", "viewPath", "module", "padded"],
+      "navigationGuards": ["auth"],
+      "routes": [
+        { "path": "/login", "name": "login", "layout": "blank" },
+        { "path": "/", "name": "home", "requiresAuth": true, "module": "home", "padded": true },
+        { "path": "/chat", "name": "chat", "requiresAuth": true, "module": "chat" },
+        { "path": "/knowledge", "name": "knowledge", "requiresAuth": true, "module": "knowledge" },
+        { "path": "/:pathMatch(.*)*", "name": "not-found", "requiresAuth": true, "padded": true }
+      ]
+    },
+    "state": {
+      "modules": [
+        "src/stores/app.ts",
+        "src/stores/auth.ts",
+        "src/stores/chat.ts",
+        "src/stores/knowledge.ts",
+        "src/stores/toast.ts"
+      ],
+      "style": "options (state/getters/actions)",
+      "persisted": [
+        "workspace.theme",
+        "workspace.session (仅勾选记住我时写入)",
+        "workspace.sidebar-collapsed",
+        "workspace.layout.<home|chat|knowledge>"
+      ]
+    },
+    "auth": {
+      "api": "src/api/auth.ts (login/logout，返回归一化 AuthSession)",
+      "store": "src/stores/auth.ts",
+      "composables": ["src/composables/useLogin.ts", "src/composables/useLogout.ts"],
+      "guard": "router.beforeEach + meta.requiresAuth；未登录跳 /login?redirect=<fullPath>",
+      "blankLayout": "meta.layout='blank' 时 App.vue 不套顶栏外壳（登录页整屏）",
+      "mock": {
+        "enabledBy": "VUE_APP_MOCK_AUTH=true",
+        "credentials": "admin / admin",
+        "latencyMs": 600,
+        "ttlMs": 28800000,
+        "failureShape": "ApiError { status: 401, code: 'HTTP_ERROR' }，与真实后端经拦截器归一化后同形",
+        "apiErrorCodeWidened": false
+      },
+      "redirectAllowList": "src/utils/redirect.ts resolveSafeRedirect()：只放行站内绝对路径，挡 //host、/\\host、绝对 URL 与 /login 自身",
+      "sessionCodec": "src/utils/authSession.ts（脏数据/解析失败按无会话处理）",
+      "expiry": "守卫里 pruneExpiredSession()；不在 getter 内判过期（computed 会缓存 Date.now()）",
+      "realBackendPending": "后端 /auth/login 与 /auth/logout 未实现（R10），切换只改 env"
+    },
     "http": {
       "module": "src/api/http.ts",
       "baseUrlEnv": "VUE_APP_API_BASE",
@@ -82,6 +128,7 @@
       "errorType": "ApiError",
       "errorCodes": ["CANCELED", "TIMEOUT", "NETWORK", "HTTP_ERROR", "UNKNOWN"],
       "errorCodeIsClosedUnion": true,
+      "authHeader": "Authorization: Bearer <token>，由 stores/auth.ts 调 setAuthToken() 注入请求拦截器",
       "typeGuards": ["isApiError", "isApiErrorCode"],
       "requestIdHeader": "X-Request-Id"
     },
@@ -93,7 +140,11 @@
         {
           "files": ["*.ts", "*.tsx", "*.vue"],
           "off": ["no-undef", "no-unused-vars"],
-          "on": ["@typescript-eslint/no-unused-vars", "@typescript-eslint/no-explicit-any", "@typescript-eslint/consistent-type-imports"]
+          "on": [
+            "@typescript-eslint/no-unused-vars",
+            "@typescript-eslint/no-explicit-any",
+            "@typescript-eslint/consistent-type-imports"
+          ]
         }
       ],
       "env": ["node", "browser", "es2021", "vue/setup-compiler-macros"],
@@ -106,9 +157,55 @@
         "未设 parserOptions.project，@typescript-eslint 的类型感知规则（如 no-floating-promises）不可用",
         "lintOnSave 的扩展名表来自 hasPlugin('typescript')；本项目未装该插件，改由 vue.config.js 的 plugin('eslint').tap 补 .ts/.tsx"
       ]
-    }
+    },
+    "chat": {
+      "api": "src/api/chat.ts（fetchSessions/fetchMessages/streamCompletion/deleteSession）",
+      "store": "src/stores/chat.ts",
+      "composable": "src/composables/useChatStream.ts（AbortController + onScopeDispose）",
+      "streamContract": "事件回调 onThink/onBlock/onAppendText/onCitations/onUsage；mock 逐段吐字，真实分支解析 SSE 帧，顺序一致",
+      "states": ["streaming（发送键变红色方块 + 尾部光标）", "stopped（保留部分内容并标注 tokens）", "failed（danger 描边 + 重试）"],
+      "mockData": "src/constants/chat.ts（7 个会话、5 条种子消息、draftFor(question) 两类草稿）",
+      "richTextInput": "结构化 MessageBlock + src/utils/richtext.ts，渲染不使用 v-html"
+    },
+    "knowledge": {
+      "api": "src/api/knowledge.ts（fetchKbSummaries/fetchDocuments/fetchChunks/retrieve/reindexDocument/removeDocument）",
+      "store": "src/stores/knowledge.ts",
+      "composables": ["src/composables/useRetrieval.ts（召回调参与取消）", "src/composables/useUploadQueue.ts（完成提示）"],
+      "stateMachine": "pending → parsing → chunking → embedding → ready；任一环节失败 → failed",
+      "mockData": "src/constants/knowledge.ts（4 库/15 篇/分片预览/召回命中）",
+      "citationDeepLink": "/chat 点击引用 → /knowledge?doc=<名> → 自动打开分片抽屉"
+    },
+    "icons": {
+      "registry": "src/constants/icons.ts（35 个 24×24 描边图标，移植自 demo/prototype.js 的 ICONS）",
+      "component": "src/components/base/AppIcon.vue",
+      "externalIconLibrary": false
+    },
+    "mockSwitch": {
+      "VUE_APP_MOCK_AUTH": "登录（src/api/auth.ts）",
+      "VUE_APP_MOCK_API": "对话与知识库（src/api/chat.ts、src/api/knowledge.ts），与鉴权分开以便逐域切真"
+    },
+    "envVars": [
+      "VUE_APP_TITLE",
+      "VUE_APP_API_BASE",
+      "VUE_APP_API_TIMEOUT",
+      "VUE_APP_DEV_PORT",
+      "VUE_APP_API_PROXY_TARGET",
+      "VUE_APP_MOCK_AUTH",
+      "VUE_APP_MOCK_API"
+    ]
   },
-  "absent": ["preprocessor", "unitTest", "e2eTest", "ci", "docker", "gitHooks", "i18n", "auth", "streamingClient", "errorTracking", "brandAssets", "uiLibrary"],
+  "absent": [
+    "preprocessor",
+    "unitTest",
+    "e2eTest",
+    "ci",
+    "docker",
+    "gitHooks",
+    "i18n",
+    "errorTracking",
+    "brandAssets",
+    "uiLibrary"
+  ],
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "npm run type-check && vue-cli-service build",
@@ -119,13 +216,21 @@
     "vue.config.js": {
       "transpileDependencies": true,
       "productionSourceMap": false,
-      "pages.index": { "entry": "src/main.ts", "template": "public/index.html", "filename": "index.html", "title": "<VUE_APP_TITLE>" },
+      "pages.index": {
+        "entry": "src/main.ts",
+        "template": "public/index.html",
+        "filename": "index.html",
+        "title": "<VUE_APP_TITLE>"
+      },
       "chainWebpack": [
         "rule('ts'): ts-loader(transpileOnly, appendTsSuffixTo [/\\.vue$/]) -> babel-loader, test /\\.tsx?$/",
         "resolve.extensions += .ts/.tsx",
         "plugin('eslint').tap: extensions += .ts/.tsx"
       ],
-      "devServer": { "port": "<VUE_APP_DEV_PORT|8080>", "proxy": { "/api": { "target": "<VUE_APP_API_PROXY_TARGET>", "changeOrigin": true } } }
+      "devServer": {
+        "port": "<VUE_APP_DEV_PORT|8080>",
+        "proxy": { "/api": { "target": "<VUE_APP_API_PROXY_TARGET>", "changeOrigin": true } }
+      }
     },
     "tsconfig.json": {
       "target": "esnext",
@@ -147,7 +252,9 @@
       "VUE_APP_API_BASE": "/api",
       "VUE_APP_API_TIMEOUT": "15000",
       "VUE_APP_DEV_PORT": "8080 (development only)",
-      "VUE_APP_API_PROXY_TARGET": "http://127.0.0.1:8000 (development only)"
+      "VUE_APP_API_PROXY_TARGET": "http://127.0.0.1:8000 (development only)",
+      "VUE_APP_MOCK_AUTH": "true (development) / false (production)",
+      "VUE_APP_MOCK_API": "true (development 与 production 演示默认) / 后端就绪后置 false"
     },
     "alias": { "@": "src" },
     "browserslist": ["> 1%", "last 2 versions", "not dead", "not ie 11"],
@@ -157,33 +264,124 @@
     "jsconfigTargetConflictsBrowserslist": false
   },
   "structure": {
-    "root": ["AGENTS.md", "README.md", "package.json", "package-lock.json", "vue.config.js", "babel.config.js", "tsconfig.json", ".env.development", ".env.production", ".gitignore", "docs", "demo", "public", "src"],
+    "root": [
+      "AGENTS.md",
+      "README.md",
+      "package.json",
+      "package-lock.json",
+      "vue.config.js",
+      "babel.config.js",
+      "tsconfig.json",
+      ".env.development",
+      ".env.production",
+      ".gitignore",
+      "docs",
+      "demo",
+      "public",
+      "src"
+    ],
     "public": ["index.html", "favicon.ico"],
     "src": {
       "files": [
-        "src/main.ts",
         "src/App.vue",
-        "src/router/index.ts",
-        "src/stores/app.ts",
+        "src/api/auth.ts",
+        "src/api/chat.ts",
         "src/api/http.ts",
+        "src/api/knowledge.ts",
         "src/api/workspace.ts",
-        "src/types/ui.ts",
-        "src/types/env.d.ts",
-        "src/views/HomeView.vue",
-        "src/views/NotFoundView.vue",
+        "src/assets/logo.png",
+        "src/components/base/AppDrawer.vue",
+        "src/components/base/AppIcon.vue",
+        "src/components/base/InlineText.vue",
+        "src/components/base/StatCard.vue",
         "src/components/base/StatusPill.vue",
+        "src/components/base/TextField.vue",
+        "src/components/business/AppSidebar.vue",
+        "src/components/business/AppTopbar.vue",
+        "src/components/business/ChatComposer.vue",
+        "src/components/business/ChatParamsPanel.vue",
+        "src/components/business/ChunkList.vue",
+        "src/components/business/DocumentTable.vue",
+        "src/components/business/KbList.vue",
+        "src/components/business/LoginForm.vue",
+        "src/components/business/MessageItem.vue",
+        "src/components/business/MessageStream.vue",
+        "src/components/business/RecallTester.vue",
+        "src/components/business/SessionList.vue",
+        "src/components/business/ThemeToggle.vue",
+        "src/components/business/ToastLayer.vue",
+        "src/components/business/UploadDropzone.vue",
+        "src/components/business/UserMenu.vue",
+        "src/composables/useBackendHealth.ts",
+        "src/composables/useChatStream.ts",
+        "src/composables/useLogin.ts",
+        "src/composables/useLogout.ts",
+        "src/composables/useRetrieval.ts",
+        "src/composables/useUploadQueue.ts",
+        "src/constants/app.ts",
+        "src/constants/auth.ts",
+        "src/constants/chat.ts",
+        "src/constants/icons.ts",
+        "src/constants/knowledge.ts",
+        "src/main.ts",
+        "src/router/guards.ts",
+        "src/router/index.ts",
+        "src/router/routes.ts",
+        "src/stores/app.ts",
+        "src/stores/auth.ts",
+        "src/stores/chat.ts",
+        "src/stores/knowledge.ts",
+        "src/stores/toast.ts",
         "src/styles/global.css",
-        "src/assets/logo.png"
+        "src/styles/modules.css",
+        "src/styles/primitives.css",
+        "src/types/auth.ts",
+        "src/types/chat.ts",
+        "src/types/env.d.ts",
+        "src/types/knowledge.ts",
+        "src/types/ui.ts",
+        "src/utils/authSession.ts",
+        "src/utils/fileType.ts",
+        "src/utils/redirect.ts",
+        "src/utils/richtext.ts",
+        "src/views/ChatView.vue",
+        "src/views/HomeView.vue",
+        "src/views/KnowledgeView.vue",
+        "src/views/LoginView.vue",
+        "src/views/NotFoundView.vue"
       ],
       "unreferencedAssets": ["src/assets/logo.png"],
-      "directories": ["src/router", "src/stores", "src/api", "src/types", "src/views", "src/components/base", "src/styles", "src/assets"],
-      "notYetCreated": ["src/composables", "src/components/business", "src/utils", "src/constants"],
-      "languageMix": { "typescript": 5, "vueSfc": 4, "css": 1, "javascript": 0 }
+      "directories": [
+        "src",
+        "src/api",
+        "src/assets",
+        "src/components/base",
+        "src/components/business",
+        "src/composables",
+        "src/constants",
+        "src/router",
+        "src/stores",
+        "src/styles",
+        "src/types",
+        "src/utils",
+        "src/views"
+      ],
+      "notYetCreated": [],
+      "languageMix": { "typescript": 34, "vueSfc": 28, "css": 3, "javascript": 0 }
     },
     "sibling": [{ "path": "personal-workspace-app/index.py", "state": "empty-file", "note": "后端占位，接口契约仍未定义" }],
     "demo": {
       "purpose": "零依赖静态 HTML 原型：对话模块 + 知识库模块，供后续 Vue 开发对照落地",
-      "files": ["demo/index.html", "demo/chat.html", "demo/knowledge.html", "demo/assets/tokens.css", "demo/assets/prototype.css", "demo/assets/modules.css", "demo/assets/prototype.js", "demo/README.md"],
+      "files": [
+        "demo/index.html",
+        "demo/chat.html",
+        "demo/knowledge.html",
+        "demo/assets/tokens.css",
+        "demo/assets/prototype.css",
+        "demo/assets/modules.css",
+        "demo/assets/prototype.js",
+        "demo/README.md"
+      ],
       "screenshots": "demo/shots/（1440x900，浅/深主题 + 空状态 / 停止生成 / 请求失败 / 分片抽屉）",
       "buildImpact": "不参与 serve/build，不在 ESLint 的 src 范围内",
       "tokensExtension": "demo/assets/tokens.css 下半段为原型扩展令牌，开发时按需并入 src/styles/global.css"
@@ -204,9 +402,49 @@
     "artifacts": [
       { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 197.16, "gzipKiB": 70.4 },
       { "file": "dist/js/index.*.js", "sizeKiB": 11.6, "gzipKiB": 5.35 },
-      { "file": "dist/js/461.*.js", "sizeKiB": 0.72, "gzipKiB": 0.49, "note": "NotFoundView 懒加载 chunk" },
+      {
+        "file": "dist/js/461.*.js",
+        "sizeKiB": 0.72,
+        "gzipKiB": 0.49,
+        "note": "NotFoundView 懒加载 chunk"
+      },
       { "file": "dist/css/index.*.css", "sizeKiB": 3.96, "gzipKiB": 1.23 }
     ],
+    "verifiedAt": "2026-09-03",
+    "authLanding": {
+      "lintPassed": true,
+      "typeCheckPassed": true,
+      "buildPassed": true,
+      "buildTimeMs": 8827,
+      "chunkIdNote": "webpack 数字 chunk id 每次构建可能变化，此处 952 为最后一次构建值",
+      "artifacts": [
+        { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 203.66, "gzipKiB": 72.64 },
+        { "file": "dist/js/index.*.js", "sizeKiB": 16.88, "gzipKiB": 7.19 },
+        {
+          "file": "dist/js/952.*.js",
+          "sizeKiB": 9.43,
+          "gzipKiB": 3.75,
+          "note": "LoginView 懒加载 chunk"
+        },
+        {
+          "file": "dist/js/461.*.js",
+          "sizeKiB": 0.72,
+          "gzipKiB": 0.49,
+          "note": "NotFoundView 懒加载 chunk"
+        },
+        { "file": "dist/css/952.*.css", "sizeKiB": 6.57, "gzipKiB": 1.33, "note": "LoginView 样式" },
+        { "file": "dist/css/index.*.css", "sizeKiB": 6.42, "gzipKiB": 1.84 }
+      ],
+      "logicAssertions": {
+        "count": 41,
+        "passed": 41,
+        "harness": "一次性脚本直接 import src 下真实模块（redirect 7 / mock 登录 7 / store 11 / 请求层 4 / 真实路由守卫 10）",
+        "committed": false
+      },
+      "routerGuardChecked": true,
+      "visualChecked": false,
+      "visualNote": "本会话无法批准启动 dev server 与无头浏览器，登录页像素级核对留给人工（路径见 README「登录与鉴权」）"
+    },
     "sourceMapsEmitted": false,
     "lazyChunkPresent": true,
     "htmlChecks": { "lang": "zh-CN", "title": "个人 AI 工作台", "placeholderTextRemoved": true },
@@ -219,26 +457,219 @@
     "devServerProbes": {
       "GET /": 200,
       "GET /api/health": "500 Proxy error ECONNREFUSED (proxy wired, backend absent)"
-    }
+    },
+    "moduleLanding": {
+      "lintPassed": true,
+      "typeCheckPassed": true,
+      "buildPassed": true,
+      "buildWarnings": 0,
+      "buildTimeMs": 9876,
+      "artifacts": [
+        { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 207.67, "gzipKiB": 74.05 },
+        { "file": "dist/js/index.*.js", "sizeKiB": 55.66, "gzipKiB": 21.08 },
+        {
+          "file": "dist/js/runtime.*.js",
+          "sizeKiB": 5.26,
+          "gzipKiB": 2.27,
+          "note": "runtimeChunk: single"
+        },
+        {
+          "file": "dist/js/821.*.js",
+          "sizeKiB": 22.86,
+          "gzipKiB": 7.73,
+          "note": "ChatView 懒加载 chunk"
+        },
+        {
+          "file": "dist/js/843.*.js",
+          "sizeKiB": 20.54,
+          "gzipKiB": 6.92,
+          "note": "KnowledgeView 懒加载 chunk"
+        },
+        {
+          "file": "dist/js/952.*.js",
+          "sizeKiB": 9.43,
+          "gzipKiB": 3.75,
+          "note": "LoginView 懒加载 chunk"
+        },
+        {
+          "file": "dist/css/index.*.css",
+          "sizeKiB": 31.95,
+          "gzipKiB": 6.13,
+          "note": "含 primitives + modules 全局层"
+        }
+      ],
+      "entrySizeKiB": 293,
+      "perfHintHandling": "runtimeChunk 独立（5.26 KiB）+ 阈值上调到 entry 400 KiB / 单文件 250 KiB（未关闭 hints），见 vue.config.js",
+      "assertions": {
+        "count": 149,
+        "passed": 149,
+        "harness": "一次性脚本直接 import src 下真实模块（Node 25 原生类型剥离 + 自定义 loader 用 @vue/compiler-sfc 编译 SFC）",
+        "breakdown": { "领域逻辑": 72, "路由表与守卫": 26, "真实组件 SSR 渲染": 51 },
+        "ssrNegativeChecks": "四页输出均不含 {{、[object Object]、undefined、NaN",
+        "committed": false
+      },
+      "visualChecked": false,
+      "visualNote": "审批通道故障，无法启动开发服务器/无头浏览器；像素级核对留给人工（路径见 README「页面与模块」）"
+    },
+    "pages": ["/login", "/", "/chat", "/knowledge"]
   },
   "issues": [
-    { "id": "R1", "priority": "P0", "status": "resolved", "path": "README.md", "problem": "未解决的合并冲突标记已提交进 main", "resolution": "重写为真实项目说明" },
-    { "id": "R2", "priority": "P0", "status": "resolved", "path": "public/index.html", "problem": "残留 sdfds、lang 为空、标题为包名", "resolution": "清理并接入 VUE_APP_TITLE" },
-    { "id": "R3", "priority": "P0", "status": "resolved", "path": "src/router", "problem": "无路由", "resolution": "vue-router 4 + 懒加载 + 404 视图" },
-    { "id": "R4", "priority": "P1", "status": "resolved", "path": "src/stores", "problem": "无状态管理", "resolution": "pinia + app store（主题/侧栏）" },
-    { "id": "R5", "priority": "P1", "status": "resolved", "path": "src/api", "problem": "无请求层与环境配置", "resolution": "axios 实例 + .env.* + devServer 代理" },
-    { "id": "R9", "priority": "P2", "status": "resolved", "path": "vue.config.js", "problem": "生产 source map 默认外泄", "resolution": "productionSourceMap: false" },
-    { "id": "R12", "priority": "P2", "status": "mitigated", "path": "demo/", "problem": "对话与知识库缺少统一界面口径，易各写各的", "resolution": "补 demo/ 静态原型（含示例图与区域→代码落点对照表）" },
-    { "id": "R6", "priority": "P1", "status": "open", "path": "src/api", "problem": "AI 流式响应（SSE / fetch stream）封装缺失", "next": "在 api 层实现流式客户端，经 composables 暴露" },
-    { "id": "R10", "priority": "P1", "status": "open", "path": "personal-workspace-app", "problem": "后端 index.py 为空，接口契约未定义，前端会话/对话功能无法联调", "next": "先定义 /api/health 与聊天接口契约（含流式协议）" },
-    { "id": "R7", "priority": "P2", "status": "open", "path": "package.json", "problem": "无 UI 组件库；sidebarCollapsed 尚无消费方；缺布局壳与品牌资源", "next": "确认 element-plus 或自研，补侧栏布局与 favicon/logo" },
-    { "id": "R8", "priority": "P2", "status": "open", "path": "repo", "problem": "无测试、无 CI、无 git hooks、无 engines", "next": "vitest + @vue/test-utils，CI 跑 lint+build，声明 engines" },
-    { "id": "R11", "priority": "P3", "status": "resolved", "path": "jsconfig.json", "problem": "target es5 与 browserslist not ie 11 不一致", "resolution": "随 TS 迁移删除 jsconfig.json，由 tsconfig.json（target esnext + lib 对齐）取代" },
-    { "id": "R13", "priority": "P2", "status": "resolved", "path": "src/**", "problem": "语言层无类型约束，跨模块契约（ApiError.code、StatusPill.state、RouteMeta.title）只能靠约定", "resolution": "2026-09-02 全量迁移 TypeScript 5.4（strict），ts-loader 转译 + vue-tsc 检查，未引入 @vue/cli-plugin-typescript" },
-    { "id": "R14", "priority": "P3", "status": "open", "path": "package.json", "problem": "未启用 @typescript-eslint 类型感知规则（无 parserOptions.project），no-floating-promises 等检测缺位", "next": "需要时在 overrides 里加 project 并处理根配置文件的 project 归属" }
+    {
+      "id": "R1",
+      "priority": "P0",
+      "status": "resolved",
+      "path": "README.md",
+      "problem": "未解决的合并冲突标记已提交进 main",
+      "resolution": "重写为真实项目说明"
+    },
+    {
+      "id": "R2",
+      "priority": "P0",
+      "status": "resolved",
+      "path": "public/index.html",
+      "problem": "残留 sdfds、lang 为空、标题为包名",
+      "resolution": "清理并接入 VUE_APP_TITLE"
+    },
+    {
+      "id": "R3",
+      "priority": "P0",
+      "status": "resolved",
+      "path": "src/router",
+      "problem": "无路由",
+      "resolution": "vue-router 4 + 懒加载 + 404 视图"
+    },
+    {
+      "id": "R4",
+      "priority": "P1",
+      "status": "resolved",
+      "path": "src/stores",
+      "problem": "无状态管理",
+      "resolution": "pinia + app store（主题/侧栏）"
+    },
+    {
+      "id": "R5",
+      "priority": "P1",
+      "status": "resolved",
+      "path": "src/api",
+      "problem": "无请求层与环境配置",
+      "resolution": "axios 实例 + .env.* + devServer 代理"
+    },
+    {
+      "id": "R9",
+      "priority": "P2",
+      "status": "resolved",
+      "path": "vue.config.js",
+      "problem": "生产 source map 默认外泄",
+      "resolution": "productionSourceMap: false"
+    },
+    {
+      "id": "R12",
+      "priority": "P2",
+      "status": "mitigated",
+      "path": "demo/",
+      "problem": "对话与知识库缺少统一界面口径，易各写各的",
+      "resolution": "补 demo/ 静态原型（含示例图与区域→代码落点对照表）"
+    },
+    {
+      "id": "R6",
+      "priority": "P1",
+      "status": "open",
+      "path": "src/api",
+      "problem": "AI 流式响应（SSE / fetch stream）封装缺失",
+      "next": "在 api 层实现流式客户端，经 composables 暴露"
+    },
+    {
+      "id": "R10",
+      "priority": "P1",
+      "status": "open",
+      "path": "personal-workspace-app",
+      "problem": "后端 index.py 为空，接口契约未定义；对话/知识库/登录全部依赖前端 mock",
+      "next": "定义 /api/health、/auth/login、/chat/sessions、/chat/completions(SSE)、/kb/* 契约后逐域把 VUE_APP_MOCK_* 置 false"
+    },
+    {
+      "id": "R7",
+      "priority": "P2",
+      "status": "open",
+      "path": "package.json",
+      "problem": "无 UI 组件库；sidebarCollapsed 尚无消费方；缺布局壳与品牌资源",
+      "next": "确认 element-plus 或自研，补侧栏布局与 favicon/logo"
+    },
+    {
+      "id": "R8",
+      "priority": "P2",
+      "status": "open",
+      "path": "repo",
+      "problem": "无测试、无 CI、无 git hooks、无 engines",
+      "next": "vitest + @vue/test-utils，CI 跑 lint+build，声明 engines"
+    },
+    {
+      "id": "R11",
+      "priority": "P3",
+      "status": "resolved",
+      "path": "jsconfig.json",
+      "problem": "target es5 与 browserslist not ie 11 不一致",
+      "resolution": "随 TS 迁移删除 jsconfig.json，由 tsconfig.json（target esnext + lib 对齐）取代"
+    },
+    {
+      "id": "R13",
+      "priority": "P2",
+      "status": "resolved",
+      "path": "src/**",
+      "problem": "语言层无类型约束，跨模块契约（ApiError.code、StatusPill.state、RouteMeta.title）只能靠约定",
+      "resolution": "2026-09-02 全量迁移 TypeScript 5.4（strict），ts-loader 转译 + vue-tsc 检查，未引入 @vue/cli-plugin-typescript"
+    },
+    {
+      "id": "R15",
+      "priority": "P1",
+      "status": "resolved",
+      "path": "src/{api,stores,composables,views,components,utils,constants}",
+      "problem": "无登录页与鉴权守卫，demo 原型也缺该页；任何路由都能直接访问",
+      "resolution": "2026-09-03 按 demo 风格落地 LoginView + meta.requiresAuth 守卫 + auth store（记住我/过期清理）+ mock 登录（admin/admin，VUE_APP_MOCK_AUTH 开关）+ Bearer token 注入 + 回跳白名单；扩展令牌并入 src/styles/global.css"
+    },
+    {
+      "id": "R16",
+      "priority": "P1",
+      "status": "open",
+      "path": "src/api/auth.ts",
+      "problem": "登录仍走 mock，凭据写在前端常量里，不具备真实安全性",
+      "next": "后端提供 /auth/login、/auth/logout 后把 VUE_APP_MOCK_AUTH 置 false，并按真实契约收紧 RawSession 与错误码（考虑新增 AUTH_FAILED）"
+    },
+    {
+      "id": "R14",
+      "priority": "P3",
+      "status": "open",
+      "path": "package.json",
+      "problem": "未启用 @typescript-eslint 类型感知规则（无 parserOptions.project），no-floating-promises 等检测缺位",
+      "next": "需要时在 overrides 里加 project 并处理根配置文件的 project 归属"
+    },
+    {
+      "id": "R17",
+      "priority": "P2",
+      "status": "resolved",
+      "path": "src/styles/primitives.css, src/styles/modules.css",
+      "problem": "设计系统层与原子/模块样式改为全局样式表（逐字移植自 demo），与 AGENTS.md 早期「样式用 <style scoped>」不完全一致",
+      "resolution": "2026-09-03 经用户确认：保留全局设计系统层，改为修订 AGENTS.md。已新增「样式分层」一节（global.css 令牌 → primitives/modules.css 共用类 → 组件专属 <style scoped>），并同步 conventions 与 config.cssStrategy；全局表禁止出现色值，色值只在 global.css",
+      "next": "无（口径已统一）。后续新增共用类需先确认会被多个组件使用，否则写进组件 scoped"
+    },
+    {
+      "id": "R18",
+      "priority": "P2",
+      "status": "open",
+      "path": "src/**",
+      "problem": "三个模块的渲染正确性只由一次性 SSR 断言覆盖，工程内没有测试框架，无法留作回归",
+      "next": "2026-09-03 用户确认暂缓，不引入测试框架。将来需要时先对齐选型（建议 vitest + @vue/test-utils），再把 149 条断言固化成用例；在此之前改视图必须重跑一次性核对脚本"
+    }
   ],
   "conventions": {
-    "component": ["SFC 三段式", "<script setup lang=\"ts\"> + Composition API（新代码）", "props 用 withDefaults(defineProps<T>()) 声明", "PascalCase 组件名", "一文件一组件", "<style scoped> + 令牌变量"],
+    "component": [
+      "SFC 三段式",
+      "<script setup lang=\"ts\"> + Composition API（新代码）",
+      "props 用 withDefaults(defineProps<T>()) 声明",
+      "PascalCase 组件名",
+      "一文件一组件",
+      "样式三层：global.css 令牌（唯一色值处）→ primitives/modules.css 共用类（禁色值）→ 组件专属 <style scoped>",
+      "新增颜色只加令牌变量；主题只经 document.documentElement.dataset.theme 切换"
+    ],
     "imports": ["使用 @/ 别名引用 src 内模块", "纯类型导入必须写成 import type"],
     "types": ["共享类型放 src/types/", "禁止 any，用 unknown + 类型守卫", "后端返回体先按可选字段 + 索引签名描述"],
     "branch": "codex/<task-slug>",
@@ -250,14 +681,78 @@
       "views 路由组件懒加载（首页可同步引入）",
       "components/base 不依赖 store 与 api",
       "src/** 不新增 .js（vue.config.js / babel.config.js / demo 除外）",
+      "受保护路由用 meta.requiresAuth 声明；需要整屏的页面用 meta.layout='blank'",
+      "会话事实源只有 stores/auth.ts；token 由它单点同步给 api/http.ts 的 setAuthToken()",
+      "用户可控的跳转目标必须过 utils/redirect.ts 的白名单，禁止直接 router.push(query.redirect)",
       "新增依赖需同步 docs/PROJECT_ANALYSIS.md 与本档案"
     ]
   },
   "roadmap": [
-    { "phase": "P0", "name": "基建", "status": "done", "delivered": ["清理 R1/R2", "vue-router", "pinia", "axios + env + 代理", "productionSourceMap:false", "404 页", "AGENTS.md", "demo/ 静态原型", "TypeScript 迁移（R13）"] },
-    { "phase": "P1", "name": "骨架", "status": "pending", "tasks": ["侧栏 + 内容区布局壳", "主题令牌扩展", "品牌资源与 favicon", "后端接口契约"] },
-    { "phase": "P2", "name": "主流程", "status": "pending", "tasks": ["会话列表", "对话页", "Markdown/代码块渲染", "打通聊天接口"] },
-    { "phase": "P3", "name": "体验", "status": "pending", "tasks": ["流式输出", "中断/重试", "消息持久化", "长列表虚拟化", "快捷键"] },
-    { "phase": "P4", "name": "工程化", "status": "pending", "tasks": ["vitest 单测", "收紧 lint 规则", "启用 @typescript-eslint 类型感知规则", "CI 构建产物（lint + type-check + build）", "engines 声明"] }
+    {
+      "phase": "P0",
+      "name": "基建",
+      "status": "done",
+      "delivered": [
+        "清理 R1/R2",
+        "vue-router",
+        "pinia",
+        "axios + env + 代理",
+        "productionSourceMap:false",
+        "404 页",
+        "AGENTS.md",
+        "demo/ 静态原型",
+        "TypeScript 迁移（R13）"
+      ]
+    },
+    {
+      "phase": "P1",
+      "name": "骨架",
+      "status": "done",
+      "delivered": [
+        "登录页与鉴权守卫（R15，含 mock）",
+        "扩展令牌并入 src/styles/global.css",
+        "顶栏用户区与退出入口",
+        "外壳：侧栏（可折叠、持久化）+ 顶栏（标题/布局切换/全局搜索 ⌘K）+ 图标注册表",
+        "设计令牌与样式层并入 src/styles（primitives.css + modules.css）",
+        "路由拆分为 routes/guards/index，新增 /chat 与 /knowledge"
+      ],
+      "tasks": ["品牌资源与 favicon", "后端接口契约（含 /auth/*，R16）"]
+    },
+    {
+      "phase": "P2",
+      "name": "主流程",
+      "status": "in-progress",
+      "tasks": ["Markdown/代码块渲染接真实语法高亮", "打通 POST /api/chat/completions（SSE）"],
+      "delivered": [
+        "SessionList / MessageStream / MessageItem / ChatComposer / ChatParamsPanel",
+        "chat store 与会话分组、筛选、参数截断",
+        "引用来源 → 知识库分片抽屉的深链闭环"
+      ]
+    },
+    {
+      "phase": "P3",
+      "name": "体验",
+      "status": "in-progress",
+      "tasks": ["流式改接真实 SSE 后端", "知识库真实上传通道（当前为模拟文件名）"],
+      "delivered": [
+        "假流式（逐段吐字 + 可中断 + 失败重试三态）",
+        "知识库列表/文档表格/状态筛选/关键词搜索",
+        "上传 → 解析 → 分片 → 向量化 → 已索引 队列模拟",
+        "分片详情抽屉（Esc 关闭、Teleport 到 body）",
+        "召回测试面板（Top-K / 阈值 / 混合检索 / 重排）"
+      ]
+    },
+    {
+      "phase": "P4",
+      "name": "工程化",
+      "status": "pending",
+      "tasks": [
+        "vitest 单测",
+        "收紧 lint 规则",
+        "启用 @typescript-eslint 类型感知规则",
+        "CI 构建产物（lint + type-check + build）",
+        "engines 声明"
+      ]
+    }
   ]
 }

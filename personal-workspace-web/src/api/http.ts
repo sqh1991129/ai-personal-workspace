@@ -12,6 +12,16 @@ const REQUEST_TIMEOUT: number = Number(process.env.VUE_APP_API_TIMEOUT) || 15000
 
 const REQUEST_ID_HEADER = 'X-Request-Id'
 
+const AUTH_HEADER = 'Authorization'
+
+// 请求层不反向依赖 store：会话变化时由 stores/auth.ts 显式把 token 交给这里。
+// 后端接管登录后，所有 /api 请求都会自动带上 Bearer token，业务代码无需改动。
+let authToken: string | null = null
+
+export function setAuthToken(token: string | null): void {
+  authToken = token && token.length > 0 ? token : null
+}
+
 export const API_ERROR_CODES = ['CANCELED', 'TIMEOUT', 'NETWORK', 'HTTP_ERROR', 'UNKNOWN'] as const
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number]
@@ -86,6 +96,9 @@ const instance: AxiosInstance = axios.create({
 
 instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   config.headers[REQUEST_ID_HEADER] = createRequestId()
+  if (authToken) {
+    config.headers[AUTH_HEADER] = `Bearer ${authToken}`
+  }
   return config
 })
 

@@ -3,6 +3,10 @@
 零依赖的静态 HTML 原型，覆盖**对话模块**与**知识库模块**两条主线，供后续 Vue 开发直接对照落地。
 所有数据均为假数据，页面不发起任何网络请求，双击任意 `.html` 即可离线查看。
 
+> **2026-09-03 状态**：三个页面已整体迁移进 `src/`（外壳 + 总览 + 对话 + 知识库 + 登录页）。
+> 本目录自此只作为**视觉与交互的事实来源**保留，功能改动请落在 `src/` 下，不要双份维护。
+> 下方对照表的「建议落点」已全部标注落地情况。
+
 ## 目录
 
 ```text
@@ -64,24 +68,26 @@ cd demo
 
 | 原型区域 | 建议落点 | 状态来源 | 接口（待后端实现） |
 | --- | --- | --- | --- |
-| 外壳 / 侧栏 / 主题 | `src/App.vue` | `src/stores/app.ts` | — |
-| 总览指标与快捷提问 | `src/views/HomeView.vue`（演进） | `src/stores/app.ts` | `GET /api/summary` |
-| 会话列表 | `src/components/business/SessionList.vue` | `src/stores/chat.ts` | `GET /api/chat/sessions` |
-| 消息流 / 消息气泡 | `src/components/business/MessageStream.vue`、`MessageItem.vue` | `src/stores/chat.ts` | `POST /api/chat/completions`（SSE） |
-| 输入区（附件 / 知识库 / 深度思考） | `src/components/business/ChatComposer.vue` | 组件内 state + `stores/chat.ts` | — |
-| 参数面板 | `src/components/business/ChatParamsPanel.vue` | `stores/chat.ts` | — |
-| 知识库列表 / 文档表格 | `src/views/KnowledgeView.vue`、`business/KbList.vue` | `src/stores/knowledge.ts` | `GET /api/kb`、`GET /api/kb/{id}/documents` |
-| 分片详情抽屉 | `src/components/base/Drawer.vue`、`business/ChunkList.vue` | 组件内 state | `GET /api/documents/{id}/chunks` |
-| 召回测试 | `src/components/business/RecallTester.vue` | `composables/useRetrieval.ts` | `POST /api/kb/{id}/retrieve` |
-| 索引状态标记 | `src/components/base/StatusPill.vue`（已存在） | props | — |
+| 外壳 / 侧栏 / 主题 | `src/App.vue` + `components/business/AppSidebar.vue`、`AppTopbar.vue` | `src/stores/app.ts` | — （已落地）|
+| 总览指标与快捷提问 | `src/views/HomeView.vue` | `stores/chat.ts`、`stores/knowledge.ts` | `GET /api/summary`（暂用假数据）|
+| 会话列表 | `src/components/business/SessionList.vue` | `src/stores/chat.ts` | `GET /api/chat/sessions`（已落地，暂由 mock 提供）|
+| 消息流 / 消息气泡 | `src/components/business/MessageStream.vue`、`MessageItem.vue` | `src/stores/chat.ts` | `POST /api/chat/completions`（SSE，已按事件回调抽象）|
+| 输入区（附件 / 知识库 / 深度思考） | `src/components/business/ChatComposer.vue` | 组件内 state + `stores/chat.ts` | — （已落地）|
+| 参数面板 | `src/components/business/ChatParamsPanel.vue` | `stores/chat.ts` | — （已落地）|
+| 知识库列表 / 文档表格 | `src/views/KnowledgeView.vue`、`business/KbList.vue`、`business/DocumentTable.vue` | `src/stores/knowledge.ts` | `GET /api/kb`、`GET /api/kb/{id}/documents`（已落地，暂由 mock 提供）|
+| 分片详情抽屉 | `src/components/base/AppDrawer.vue`、`business/ChunkList.vue` | `src/stores/knowledge.ts` | `GET /api/documents/{id}/chunks`（已落地，暂由 mock 提供）|
+| 召回测试 | `src/components/business/RecallTester.vue` | `composables/useRetrieval.ts` | `POST /api/kb/{id}/retrieve`（已落地，暂由 mock 提供）|
+| 索引状态标记 | `src/components/base/StatusPill.vue` + `business/DocumentTable.vue` 的状态标签 | props / constants | — |
+| 登录页（**原型缺失**，2026-09-03 按本原型令牌与组件风格补齐） | `src/views/LoginView.vue` + `components/business/LoginForm.vue` | `src/stores/auth.ts` | `POST /api/auth/login`（暂由 `VUE_APP_MOCK_AUTH` 的假数据承担，账号 admin / admin） |
 
 ## 落地注意事项
 
-- 令牌扩展（`--color-surface-sunken`、`--radius-lg`、`--shadow-*`、`--header-h` 等）目前只在 `demo/assets/tokens.css`，
-  正式开发时按需并入 `src/styles/global.css`，并同步 `docs/PROJECT_ANALYSIS.md` 与 `docs/project-profile.json`。
+- 令牌扩展（`--color-surface-sunken`、`--radius-lg`、`--shadow-*`、`--header-h` 等）**已并入** `src/styles/global.css`，
+  并补齐 `--color-overlay`、`--color-user-bubble`、`--color-on-danger`、`--sidebar-w`、`--rail-w`、`--panel-w` 等布局令牌。
+  正式工程里只允许 `global.css` 出现色值，组件一律引用令牌。
 - 原型未引入任何 UI 组件库、图标库、字体 CDN，符合仓库「尚未引入需先确认」的约定。
-- `demo/` 不参与 `npm run serve` / `npm run build`，也不在 ESLint 的 `src` 范围内；如需线上预览，
-  可后续在 `vue.config.js` 里加 `devServer.static` 或把原型转成 Vue 视图，二选一即可，不要长期双份维护。
+- `demo/` 不参与 `npm run serve` / `npm run build`，也不在 ESLint 的 `src` 范围内。原型已转成 Vue 视图，
+  因此**不再需要** `devServer.static`；本目录保留用于对照与回归截图。
 - 对话与知识库的假数据在 `prototype.js` 的 `KB_DATA` / `draftFor()` 里，其中默认知识库「架构决策库」的行数据
   与 `knowledge.html` 中手写的表格行需保持一致（首屏故意保留静态行，便于无 JS 时阅读结构）。
 - 导出示例图可用状态参数：`chat.html?state=empty`（新会话空状态）、`knowledge.html?state=drawer`（分片抽屉）。

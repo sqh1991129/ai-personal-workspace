@@ -1,9 +1,21 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue'
+import { computed, watchEffect } from 'vue'
+import { useRoute } from 'vue-router'
+import AppSidebar from '@/components/business/AppSidebar.vue'
+import AppTopbar from '@/components/business/AppTopbar.vue'
+import ToastLayer from '@/components/business/ToastLayer.vue'
 import { useAppStore } from '@/stores/app'
+import type { ModuleName } from '@/types/ui'
 
-const appTitle: string = process.env.VUE_APP_TITLE || '个人 AI 工作台'
+const route = useRoute()
 const appStore = useAppStore()
+
+// 登录页要整屏，不套侧栏 + 顶栏外壳
+const isBlankLayout = computed<boolean>(() => route.meta.layout === 'blank')
+const pageTitle = computed<string>(() => route.meta.title ?? '')
+const viewPath = computed<string>(() => route.meta.viewPath ?? '')
+const activeModule = computed<ModuleName | null>(() => route.meta.module ?? null)
+const isPadded = computed<boolean>(() => route.meta.padded === true)
 
 watchEffect(() => {
   document.documentElement.dataset.theme = appStore.theme
@@ -11,76 +23,15 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="app-shell">
-    <header class="app-shell__bar">
-      <RouterLink class="app-shell__brand" :to="{ name: 'home' }">
-        <span class="app-shell__mark">WS</span>
-        <span>{{ appTitle }}</span>
-      </RouterLink>
-      <button type="button" class="app-shell__theme" @click="appStore.toggleTheme()">
-        {{ appStore.isDark ? '切换到浅色' : '切换到深色' }}
-      </button>
-    </header>
-    <main class="app-shell__content">
-      <RouterView />
-    </main>
+  <RouterView v-if="isBlankLayout" />
+  <div v-else class="shell">
+    <AppSidebar />
+    <div class="main">
+      <AppTopbar :title="pageTitle" :view-path="viewPath" :module="activeModule" />
+      <main class="page" :class="{ 'page--padded': isPadded }">
+        <RouterView />
+      </main>
+    </div>
   </div>
+  <ToastLayer />
 </template>
-
-<style scoped>
-.app-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-}
-
-.app-shell__bar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
-  padding: 0 var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.app-shell__brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text);
-  font-weight: 600;
-}
-
-.app-shell__brand:hover {
-  text-decoration: none;
-}
-
-.app-shell__mark {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent);
-  color: #ffffff;
-  font-size: 12px;
-}
-
-.app-shell__theme {
-  padding: 6px 14px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text);
-  font-size: 13px;
-}
-
-.app-shell__content {
-  flex: 1;
-  padding: var(--space-4);
-}
-</style>

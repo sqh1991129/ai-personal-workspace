@@ -376,3 +376,140 @@ demo/
 - `StatusPill` 的 `state` 由 `string` 收紧为 `StatusState`，模板里原有的 `|| props.state` 兜底分支已删除（类型上不再可达）。
 - 未引入 `parserOptions.project`，因此 `@typescript-eslint` 的**需要类型信息**的规则（如 `no-floating-promises`）暂不可用；`serve` 阶段不做类型检查，需要即时反馈可在 IDE 开 Volar/vue-tsc。
 - `demo/` 仍是原生 JS 静态原型（无构建步骤），是「全量 TS」的显式例外。
+
+---
+
+## 12. 登录与鉴权落地记录（2026-09-03）
+
+补齐 `demo/` 原型缺失的登录页，并把「未登录自动跳转」做成路由级约束。对应新增 issue **R15**（原 `absent.auth` 关闭）。
+
+### 12.1 组件切分（按 vue-best-practices 的 component map 先设计后编码）
+
+| 文件 | 单一职责 | 数据流 |
+| --- | --- | --- |
+| `src/views/LoginView.vue` | 路由级编排面：品牌区 + 表单区 + mock 提示 | 从 `useLogin()` 取只读投影，向 `LoginForm` 传 props |
+| `src/components/business/LoginForm.vue` | 凭据表单：字段态 + 本地校验 + 提交 | `v-model` 内部字段；`props: pending/errorMessage/mock*`；`emit('submit', LoginPayload)` |
+| `src/components/base/TextField.vue` | 带标签/错误/密码可见性切换的输入原子件 | `defineModel<string>()` + props；不依赖 store 与 api |
+| `src/components/business/ThemeToggle.vue` | 主题切换按钮（App 外壳与登录页共用） | 依赖 `stores/app.ts` |
+| `src/components/business/UserMenu.vue` | 顶栏当前用户与退出入口 | 依赖 `stores/auth.ts` + `useLogout()` |
+| `src/composables/useLogin.ts` | 登录编排：api → store → 回跳；卸载时取消请求 | 只暴露 `computed` 只读投影与 `submit()` |
+| `src/composables/useLogout.ts` | 退出编排：先清本地再通知后端 | 同上 |
+| `src/api/auth.ts` | 唯一出口：`login()` / `logout()`，mock 与真实请求同一签名 | 返回归一化 `AuthSession` |
+| `src/stores/auth.ts` | 会话事实源（pinia，options 风格与 `stores/app.ts` 一致） | `startSession/clearSession/pruneExpiredSession` |
+| `src/utils/authSession.ts` `src/utils/redirect.ts` | 纯函数：本地读写/过期判断、回跳白名单 | 不依赖 Vue 运行时 |
+
+### 12.2 关键决策
+
+- **mock 开关**：`VUE_APP_MOCK_AUTH`（开发 `true` / 生产 `false`）。`login()` 两条分支返回同一个 `AuthSession` 结构，
+  失败时 mock 抛出的 `ApiError` 与真实后端经 `http.ts` 拦截器归一化后的结果同形（`status: 401` + `code: 'HTTP_ERROR'`），
+  因此**没有**为鉴权扩宽 `ApiErrorCode` 联合类型。切真实接口只改 env。
+- **守卫**：`router.beforeEach` 内 `useAuthStore()`（pinia 在 `main.ts` 中先于 router 安装，模块顶层取实例会拿到未激活的 pinia）。
+  受保护路由由 `meta.requiresAuth` 声明，404 页同样受保护，避免未登录时探测路由是否存在。
+- **布局**：`meta.layout: 'blank'` 让登录页不套 `App.vue` 的顶栏外壳；登录页需要整屏且自带主题开关。
+- **会话持久化**：勾选「记住我」才写 `localStorage['workspace.session']`；未勾选只存内存，刷新即失效。
+  读取时对脏数据/解析失败一律按「无会话」处理，过期会话在守卫里 `pruneExpiredSession()` 清理。
+  > 为什么不在 getter 里直接判过期：pinia getter 是 `computed`，`Date.now()` 不是响应式源，会把结果缓存住。
+- **token 注入**：`http.ts` 新增 `setAuthToken()`，请求拦截器据此加 `Authorization: Bearer …`。
+  由 `stores/auth.ts` 单点同步，避免「store → api → store」的循环依赖，也让后端接管后所有请求自动带凭证。
+- **回跳安全**：`meta` 拦截时把 `to.fullPath` 放进 `query.redirect`，登录成功后经 `resolveSafeRedirect()` 白名单校验
+  （只放行站内绝对路径，挡掉 `//evil.com`、`/\evil.com`、绝对 URL 与指向 `/login` 自身的回环）。
+- **令牌扩展**：`demo/assets/tokens.css` 下半段（`--color-surface-sunken`、`--color-accent-soft`、`--shadow-*`、
+  `--radius-lg/pill`、`--font-*` 等）按原型 README 的约定并入 `src/styles/global.css`，并补 `:focus-visible` 焦点环、
+  表单控件字体继承与 `.icon` 图标基元；组件内不写死色值。
+
+### 12.3 与 vue-best-practices 的对应
+
+- 反应式：基础类型用 `shallowRef`，表单这类「单状态对象」用 `reactive` 就地改，派生值全部 `computed`，getter 保持纯函数。
+- SFC：`<script setup lang="ts">` 段序 script → template → style；`<style scoped>` 以类选择器为主；模板不做过滤/分支推导。
+- 数据流：props down / events up，`defineProps<Props>()` + `defineEmits<{ submit: [LoginPayload] }>()` 显式契约，
+  双向绑定用 Vue 3.4+ 的 `defineModel`；DOM 引用用 3.5 的 `useTemplateRef`。
+- 组合式：登录/退出的状态与副作用从组件抽到 `useLogin`/`useLogout`，对外只给只读投影，卸载时 `onScopeDispose` 取消请求。
+- 可选特性与性能项：本需求没有列表虚拟化、Teleport、KeepAlive 等诉求，未额外引入。
+
+### 12.4 验证证据
+
+- `npm run lint` 0 error、`npm run type-check` 0 error、`npm run build` 成功；登录页切成独立懒加载 chunk
+  （`812.*.js` 9.42 KiB / gzip 3.76 KiB，`812.*.css` 6.57 KiB），`chunk-vendors` 200.66 KiB（gzip 71.67），无 `.map`。
+- 逻辑断言 41 条全部通过（一次性脚本直接加载 `src` 下真实模块，非复刻）：
+  回跳白名单 7 条、mock 登录与错误形态 7 条、store 记住我/恢复/过期/脏数据 11 条、请求层 token 与请求 ID 4 条、
+  真实路由守卫 10 条（未登录拦截、带参回跳、404 保护、已登录访问 /login 回首页、过期清理、退出后再拦截）。
+- 未做像素级视觉核对：本会话内无法批准启动开发服务器/无头浏览器。人工核对路径见 `README.md`「登录与鉴权」。
+
+## 13. 原型整体迁移落地记录（2026-09-03）
+
+登录页补齐后，把 `demo/` 的三个页面整体迁进 `src/`：外壳（侧栏 + 顶栏 + 列数布局）、工作台总览、对话模块、知识库模块。
+落点严格按 `demo/README.md` 的对照表执行。
+
+### 13.1 新增结构
+
+| 层 | 文件 | 职责 |
+| --- | --- | --- |
+| 外壳 | `src/App.vue`、`components/business/AppSidebar.vue`、`AppTopbar.vue`、`UserMenu.vue`、`ToastLayer.vue` | 侧栏/顶栏/折叠/布局切换/全局搜索/退出 |
+| 对话 | `types/chat.ts`、`constants/chat.ts`、`api/chat.ts`、`stores/chat.ts`、`composables/useChatStream.ts` | 会话列表、流式消息、参数面板、输入区 |
+| 知识库 | `types/knowledge.ts`、`constants/knowledge.ts`、`api/knowledge.ts`、`stores/knowledge.ts`、`composables/useRetrieval.ts`、`useUploadQueue.ts` | 库列表、文档表格、上传队列、分片抽屉、召回测试 |
+| 基元 | `components/base/AppIcon.vue`、`InlineText.vue`、`StatCard.vue`、`AppDrawer.vue`、`constants/icons.ts` | 图标注册表、行内标记、迷你折线、抽屉 |
+| 视图 | `views/ChatView.vue`、`views/KnowledgeView.vue`，`views/HomeView.vue` 演进为总览 | 只做编排，状态来自 store |
+| 样式 | `styles/primitives.css`、`styles/modules.css` | 由 `demo/assets/*.css` 逐字移植 |
+
+路由拆成 `router/routes.ts`（表与 `meta`）+ `router/guards.ts`（登录守卫）+ `router/index.ts`（装配与标题），
+前两者不依赖 history 实例，可在无浏览器环境按真实配置校验。
+
+### 13.2 关键决策
+
+- **流式抽象**：`streamCompletion(request, events, options)` 以 `onThink / onBlock / onAppendText / onCitations / onUsage`
+  事件驱动。mock 用定时器逐段吐字，真实分支按 SSE 帧逐行解析（`event:` / `data:`），顺序一致，
+  因此 store 不需要知道当前是假数据还是真接口。取消统一抛 `ApiError(code: 'CANCELED')`，不覆盖已落好的 stopped 态。
+- **不引入 v-html**：原型的回答是 HTML 字符串，迁移后改为结构化块（paragraph / heading / list / code）+
+  `utils/richtext.ts` 解析 `**加粗**`、`` `行内代码` ``，召回命中用 `segments[{text, marked}]` 表达 `<mark>`。
+  渲染侧全部走 `v-for` + 元素，避免注入面。
+- **mock 粒度**：新增 `VUE_APP_MOCK_API` 管对话与知识库，与 `VUE_APP_MOCK_AUTH` 分开，便于逐域切真。
+- **布局/侧栏/主题持久化**：`workspace.layout.<module>`、`workspace.sidebar-collapsed`，与既有 `workspace.theme` 一致。
+- **上传队列**：定时器持有在 store（离开页面继续索引），完成提示由 `useUploadQueue` 通过 watch `lastIndexedFile` 发出，
+  避免 store 依赖 toast store。
+- **引用来源闭环**：`/chat` 点击 `.cite` → `/knowledge?doc=<名>` → 自动定位并打开分片抽屉。
+
+### 13.3 样式分层：偏差已闭环（R17 已 resolved）
+
+移植 demo 的设计系统层时，曾与本文件早期约定「样式用 `<style scoped>`」冲突：`.shell` / `.rail` / `.panel` / `.btn` /
+`.card` / `.module` 等类被 10+ 组件共用，逐个 scoped 复制会双份维护且必然漂移。2026-09-03 经用户确认，
+**选择修订 `AGENTS.md` 而不是把样式拆进各组件**，AGENTS.md 新增「样式分层」一节，口径固化为三层：
+
+| 层 | 文件 | 放什么 | 约束 |
+| --- | --- | --- | --- |
+| 令牌与基础 | `src/styles/global.css` | 变量、reset、排版 | 全工程唯一允许出现色值字面量 |
+| 设计系统层 | `src/styles/primitives.css`、`src/styles/modules.css` | 跨组件共用的类（经验值：≥3 处使用） | 只写类选择器，禁止色值 |
+| 组件层 | 各 SFC `<style scoped>` | 单组件专属样式 | 不得回塞全局表 |
+
+落地现状与此一致：组件专属样式共 12 个 SFC 带 `<style scoped>`（含本次为替换原型内联 `style=` 新增的 8 处），
+`global.css` 之外的样式与 TS/Vue 文件里**硬编码色值为 0**（唯一的 `#ffffff` 已改为 `--color-on-danger`），
+两个全局样式表只引用令牌变量。引入顺序 global → primitives → modules 固定在 `src/main.ts`，后者依赖前者的同名类覆盖关系。
+
+### 13.4 构建体积
+
+三个模块落地后入口从 224 KiB 涨到 304 KiB，触发 webpack 体积告警。处理方式不是关掉 hints：
+`optimization.runtimeChunk: 'single'`（runtime 独立成 5.26 KiB chunk，业务变更不再让用户重下 runtime），
+并把阈值调到当前实测之上（entry 400 KiB / 单文件 250 KiB），明显变大仍会告警。见 `vue.config.js` 注释。
+
+### 13.5 验证证据
+
+- `npm run lint` 0 error、`npm run type-check` 0 error、`npm run build` 成功且**无告警**。
+- 一次性脚本直接加载 `src` 下真实模块（Node 25 原生类型剥离 + 自定义 loader 用 `@vue/compiler-sfc` 编译 SFC），共 149 条断言全部通过：
+  - 领域逻辑 72 条：行内标记与类型类映射、假流式逐段吐字与取消、chat store 分组/筛选/参数截断、
+    `useChatStream` 发送/停止/重新生成、knowledge store 库切换/搜索/上传入表/抽屉、`useRetrieval` 调参联动。
+  - 路由与守卫 26 条：真实路由表的 `meta`（layout / module / padded / requiresAuth）、未登录拦截与带参回跳、
+    已登录访问 `/login` 回首页、过期会话清理与本地数据移除、回跳白名单 6 条。
+  - 真实组件 SSR 渲染 51 条（35 条结构断言 + 16 条「无 `{{` / `[object Object]` / `undefined` / `NaN` 残留」反向断言）：登录页、外壳（侧栏/顶栏/搜索）、总览（问候/提问框/4 指标卡/最近会话/健康度/待办/连通性/模块入口）、
+    对话（三栏标记、历史消息、失败气泡、停止标注、代码块、引用、思考、输入区、参数面板）、
+    知识库（库列表、文档表格、状态标签、上传区、召回测试、抽屉、`file-type--*` 修饰类）、404 在壳内。
+- 仍未做像素级核对：本会话无法批准启动开发服务器/无头浏览器（审批通道报错）。人工路径见 `README.md`「页面与模块」。
+
+### 13.6 本轮两项确认的处理（2026-09-03）
+
+1. **样式分层口径（R17 → resolved）**：用户选择「修订 `AGENTS.md`」而不是把 `primitives.css` / `modules.css` 拆进各组件。
+   `AGENTS.md` 新增「样式分层」一节，把判定口径（共用面广 → 全局表；单组件 → scoped）、引入顺序
+   （global → primitives → modules，固定在 `src/main.ts`）与「色值只在 `global.css`」写成硬约束；
+   同步更新了「目录职责」的 `src/styles/` 行、「验证基线」的构建体积数字，以及本档案的 `conventions.component` 与 `config.cssStrategy`。
+   日后若要走全量 scoped，需要先修订该节并重新核对三页视觉，不要边写边混用两种口径。
+2. **回归测试（R18 → 暂缓，仍 open）**：用户确认本期不引入测试框架。149 条断言继续以一次性脚本形式存在（未提交进仓库），
+   因此**改动 `src/views/**`、`src/components/**`、`src/stores/**` 后必须手工重跑核对**，不能只依赖 lint + type-check + build。
+   `AGENTS.md` 的「尚未引入（需要时先确认）」已加注暂缓结论，避免后续任务擅自安装 vitest。

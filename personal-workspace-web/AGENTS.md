@@ -29,7 +29,7 @@ npm run lint         # ESLint 检查，覆盖 .ts/.tsx/.vue/.js 与根配置（s
   **不要**改用 `@babel/preset-typescript`：SFC 脚本块传给 Babel 的 `filename` 仍是 `X.vue`，基于扩展名的探测会失效。
 - **不要**引入 `@vue/cli-plugin-typescript`：它的 `cache-loader` peer 仍指向 webpack 4，装上需要仓库级 `legacy-peer-deps`。
 - 构建链是 Vue CLI 5 / webpack 5，不要引入只支持 Vite 的插件（测试框架例外，见下）。
-- 新代码统一 SFC + `<script setup lang="ts">` + Composition API；样式用 `<style scoped>` + `src/styles/global.css` 的 CSS 变量令牌。
+- 新代码统一 SFC + `<script setup lang="ts">` + Composition API；样式按「令牌 → 设计系统层 → 组件 scoped」三层放置，见下文「样式分层」。
 - 不要新增需要 ESLint 8 的 lint 依赖（如 `eslint-plugin-vue@9`、Prettier 集成），除非同一任务里一并升级 ESLint 并验证。
   TypeScript 侧只用 `@typescript-eslint@5`（支持 ESLint 7），规则集中在 `package.json` 的 `eslintConfig.overrides`。
 - 主题切换依赖 `document.documentElement.dataset.theme`，新增颜色只能加令牌变量，不要写死色值。
@@ -63,8 +63,24 @@ const healthState = ref('idle' as any)
 | `src/types/` | 共享类型与 `process.env` 声明 | 只放类型，不放运行时代码；`env.d.ts` 改动需同步 `.env.*` 与 README |
 | `src/components/base/` | 无业务依赖的通用组件 | 不得依赖 store 与 api |
 | `src/components/business/` | 业务组件 | 允许依赖 store 与 composables |
-| `src/styles/` | 令牌与基础样式 | 令牌集中在 `global.css` 的 `:root` |
+| `src/styles/` | 三层全局样式 | 令牌集中在 `global.css` 的 `:root`；色值只允许出现在这里 |
 | `src/utils/` `src/constants/` | 纯函数与常量 | 不得依赖 Vue 运行时 |
+
+## 样式分层
+
+样式只有三层，新规则按“作用范围最大处优先、越具体越下沉”放置：
+
+| 层 | 文件 | 放什么 | 约束 |
+| --- | --- | --- | --- |
+| 令牌与基础 | `src/styles/global.css` | CSS 变量（`:root` 与 `[data-theme]`）、reset、排版 | **全工程唯一允许出现色值字面量的文件** |
+| 设计系统层 | `src/styles/primitives.css`（外壳/原子）、`src/styles/modules.css`（三个模块） | **跨组件共用**的类（经验值：≥3 处使用）：`.shell`/`.rail`/`.panel`/`.btn`/`.card`/`.module` 等 | 全局样式表，只写类选择器、不写组件私有状态；禁止出现色值，一律引用令牌 |
+| 组件层 | 各 SFC 的 `<style scoped>` | 只服务该组件的样式（新增布局微调、原型内联 `style=` 的替代） | 组件专属样式**必须**放这里，不要塞回全局表 |
+
+- 判定口径：**共用面广 → 全局表；只一个组件用 → scoped**。这是 2026-09-03 与用户确认后的正式口径，
+  取代本文件早期的「样式一律 `<style scoped>`」表述（背景与代价见 `docs/PROJECT_ANALYSIS.md` 第 13.3 节、issue R17）。
+- 新增组件时**优先复用设计系统层已有类名**，需要新类先确认它是否会被多处使用；只有单组件使用时才写进 scoped。
+- 三张表都在 `src/main.ts` 里按 global → primitives → modules 顺序引入，不要改顺序（后者依赖前者同名类的覆盖关系）。
+- 主题切换依赖 `document.documentElement.dataset.theme`：新增颜色只能加令牌变量，不要写死色值，也不要在全局表里补 `!important` 覆盖。
 
 ## 配置与密钥
 
@@ -77,7 +93,9 @@ const healthState = ref('idle' as any)
 
 - `npm run lint`：0 error。
 - `npm run type-check`：0 error（`vue-tsc --noEmit`）。
-- `npm run build`：成功；`dist/js/chunk-vendors.*.js` 约 197 KiB（gzip 约 70 KiB），无 `.map` 产物（`productionSourceMap: false`）。
+- `npm run build`：成功且无 webpack 告警；`dist/js/chunk-vendors.*.js` 约 208 KiB（gzip 约 74 KiB）、入口约 293 KiB，
+  无 `.map` 产物（`productionSourceMap: false`）。体积阈值与 `runtimeChunk: 'single'` 的取舍见 `vue.config.js` 注释。
+- 页面渲染正确性目前由一次性断言脚本覆盖（工程内暂无测试框架，见 issue R18）；改视图后请重跑对应核对，不要只信 lint。
 - 负向验证过：在 `.ts` 里放 `any`/未使用变量，`npm run lint` 与 `npm run build` 都会失败（证明 TS 文件确实进了规则与 webpack 链路）。
 - 首页「后端连通性」卡片：后端未实现时返回 `ECONNREFUSED` 代理错误属预期，不要为此改前端代码。
 
@@ -90,5 +108,7 @@ const healthState = ref('idle' as any)
 ## 尚未引入（需要时先确认）
 
 UI 组件库、Sass、单元测试（建议 vitest + @vue/test-utils）、CI、Prettier、i18n。引入前请先与用户确认选型，并同步 `docs/` 两份档案。
+
+> 单元测试已于 2026-09-03 确认**暂缓**（不引入框架，回归仍靠一次性脚本）；需要时再重新提选型，不要擅自安装。
 
 > TypeScript 已于 2026-09-02 引入（含 `vue-tsc` 与 `@typescript-eslint@5`），不再需要确认；新增 TS 相关工具链仍需先对齐本文件。

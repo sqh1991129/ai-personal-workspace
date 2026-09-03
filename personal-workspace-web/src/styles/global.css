@@ -7,6 +7,8 @@
   --color-accent: #42b983;
   --color-danger: #d92d20;
   --color-warning: #b54708;
+  /* 危险色底上的前景（深浅两套都是白字），不要在各处写死 #fff */
+  --color-on-danger: #ffffff;
   --radius-md: 10px;
   --radius-sm: 6px;
   --space-1: 4px;
@@ -14,6 +16,39 @@
   --space-3: 16px;
   --space-4: 24px;
   --space-5: 40px;
+}
+
+/* 扩展令牌：与 demo/assets/tokens.css 下半段同源，落地时并入这里，组件内不要写死色值。 */
+:root {
+  --color-surface-sunken: #eef0f4;
+  --color-surface-raised: #ffffff;
+  --color-accent-hover: #38a876;
+  --color-accent-soft: #e7f7ef;
+  --color-on-accent: #ffffff;
+  --color-success: #067647;
+  --color-success-soft: #e6f4ea;
+  --color-info: #175cd3;
+  --color-info-soft: #eff4ff;
+  --color-warning-soft: #fef0c7;
+  --color-danger-soft: #fee4e2;
+  --color-overlay: rgba(16, 20, 26, 0.45);
+  --color-user-bubble: #dcefe5;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 6px 16px rgba(16, 24, 40, 0.1);
+  --shadow-lg: 0 18px 44px rgba(16, 24, 40, 0.18);
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --font-xs: 12px;
+  --font-sm: 13px;
+  --font-md: 14px;
+  --font-lg: 16px;
+  --font-xl: 20px;
+  --font-2xl: 26px;
+  --header-h: 56px;
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 64px;
+  --rail-w: 268px;
+  --panel-w: 320px;
 }
 
 :root[data-theme='dark'] {
@@ -25,6 +60,27 @@
   --color-accent: #35b98a;
   --color-danger: #f97066;
   --color-warning: #fdb022;
+  --color-on-danger: #ffffff;
+}
+
+/* 扩展令牌（深色） */
+:root[data-theme='dark'] {
+  --color-surface-sunken: #121419;
+  --color-surface-raised: #262b33;
+  --color-accent-hover: #46cc9b;
+  --color-accent-soft: #17312a;
+  --color-on-accent: #06170f;
+  --color-success: #6ce9a6;
+  --color-success-soft: #10281d;
+  --color-info: #8ab0ff;
+  --color-info-soft: #14202f;
+  --color-warning-soft: #2f2408;
+  --color-danger-soft: #2d1214;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-user-bubble: #234034;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.6);
 }
 
 *,
@@ -44,6 +100,8 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: Avenir, Helvetica, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  font-size: var(--font-md);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -58,7 +116,83 @@ a:hover {
   text-decoration: underline;
 }
 
+code,
+pre,
+kbd {
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
 button {
   font: inherit;
   cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* 键盘可达性：所有可聚焦控件统一焦点环（与 demo 原型一致） */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: var(--radius-pill);
+  background-clip: content-box;
+  background-color: var(--color-border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 组件用 display:grid/flex 时会盖掉 UA 的 [hidden]{display:none}，这里统一兜底 */
+[hidden] {
+  display: none !important;
+}
+
+/* 图标基元：SVG 由组件内联，尺寸与描边统一在这里控制 */
+.icon {
+  display: inline-flex;
+  flex: none;
+  color: currentColor;
+}
+
+.icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.icon--sm svg {
+  width: 15px;
+  height: 15px;
+}
+
+.icon--lg svg {
+  width: 22px;
+  height: 22px;
 }

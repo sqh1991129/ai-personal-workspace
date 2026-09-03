@@ -8,6 +8,20 @@ const proxyTarget = process.env.VUE_APP_API_PROXY_TARGET || 'http://127.0.0.1:80
 module.exports = defineConfig({
   transpileDependencies: true,
   productionSourceMap: false,
+  // 三个模块（总览 / 对话 / 知识库）落地后，入口包含设计系统 CSS，实测约 304 KiB（gzip 约 81 KiB）。
+  // runtime 拆成独立 chunk：业务代码变更时不再让用户重新下载 runtime。
+  configureWebpack: {
+    optimization: {
+      runtimeChunk: 'single'
+    },
+    // 保留 webpack 的体积提示，只把阈值调到当前实测之上（entry 400 KiB / 单文件 250 KiB），
+    // 而不是关掉 hints —— 明显变大时仍然会告警。
+    performance: {
+      hints: 'warning',
+      maxEntrypointSize: 400 * 1024,
+      maxAssetSize: 250 * 1024
+    }
+  },
   pages: {
     index: {
       entry: 'src/main.ts',
