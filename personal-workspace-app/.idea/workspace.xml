@@ -5,14 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c330de87-598b-42fa-a08d-7284ad9699d8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/personal-workspace-app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/personal-workspace-app.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/poetry.lock" beforeDir="false" afterPath="$PROJECT_DIR$/poetry.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/__main__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/__main__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/api/router.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/api/router.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/core/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/core/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/domain/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/domain/user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/response/user_login_res.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/response/user_login_res.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/services/userService.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/services/userService.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,6 +48,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Python.JWT.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "last_opened_file_path": "/Users/sunquanhu/Projects/study/ai/personal-workspace/personal-workspace-app/src/personal_workspace_app/response",
     "node.js.detected.package.eslint": "true",
@@ -73,6 +72,36 @@
       <recent name="$PROJECT_DIR$/src/personal_workspace_app" />
     </key>
   </component>
+  <component name="RunManager">
+    <configuration name="JWT" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="personal-workspace-app" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/personal_workspace_app/core" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/personal_workspace_app/core/JWT.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.JWT" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -90,7 +119,7 @@
       <option name="presentableId" value="Default" />
       <updated>1788318837960</updated>
       <workItem from="1788318839303" duration="14052000" />
-      <workItem from="1788398259707" duration="16409000" />
+      <workItem from="1788398259707" duration="20339000" />
     </task>
     <servers />
   </component>
@@ -102,10 +131,13 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/src/personal_workspace_app/api/router.py</url>
-          <line>20</line>
+          <line>23</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/personal_workspace_app$JWT.coverage" NAME="JWT Coverage Results" MODIFIED="1788430934963" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/src/personal_workspace_app/core" />
   </component>
 </project>

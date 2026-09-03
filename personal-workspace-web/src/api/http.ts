@@ -22,7 +22,7 @@ export function setAuthToken(token: string | null): void {
   authToken = token && token.length > 0 ? token : null
 }
 
-export const API_ERROR_CODES = ['CANCELED', 'TIMEOUT', 'NETWORK', 'HTTP_ERROR', 'UNKNOWN'] as const
+export const API_ERROR_CODES = ['CANCELED', 'TIMEOUT', 'NETWORK', 'HTTP_ERROR', 'BUSINESS_ERROR', 'UNKNOWN'] as const
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number]
 
@@ -65,6 +65,71 @@ interface BackendErrorPayload {
   message?: string
   error?: string
   code?: string
+  trace_id?: string
+}
+
+/** 后端统一响应报文，见 personal-workspace-app/core/base_response.py 与 docs/默认模块.md。 */
+export interface ApiEnvelope<T> {
+  /** 业务状态码，200 表示成功 */
+  code?: number
+  message?: string
+  data?: T
+  /** 全链路追踪 ID */
+  trace_id?: string
+  timestamp?: number
+}
+
+/** 后端返回体一律先按未知处理，再用这种守卫收窄（AGENTS.md 的 TypeScript 约定）。 */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+/** 只认「code 是数字」这一特征：后端没按 BaseResponse 返回时宁可判为不是信封，也不误拆。 */
+export function isApiEnvelope(value: unknown): value is ApiEnvelope<unknown> {
+  return isRecord(value) && typeof value.code === 'number'
+}
+
+/**
+ * 拆 BaseResponse 信封。HTTP 200 但 code != 200 同样是失败（后端用 BaseResponse.failure 表达），
+ * 归一化成 BUSINESS_ERROR，调用方仍然只 catch ApiError。
+ * data 由 unknown → T 是边界断言：具体契约由各领域模块的 Raw* 类型收敛（AGENTS.md 约定）。
+ */
+export function unwrapEnvelope<T>(payload: unknown, fallbackMessage: string): T {
+  if (!isApiEnvelope(payload)) {
+    throw new ApiError(`${fallbackMessage}：响应不是约定的 BaseResponse 报文`, { code: 'UNKNOWN', detail: payload })
+  }
+  if (payload.code !== 200) {
+    throw new ApiError(payload.message || fallbackMessage, {
+      status: payload.code,
+      code: 'BUSINESS_ERROR',
+      requestId: payload.trace_id,
+      detail: payload
+    })
+  }
+  return payload.data as T
+}
+
+/**
+ * 兜底翻译裸 HTTPValidationError：后端全局异常处理器目前会把参数校验错误包成
+ * HTTP 200 + code 40000（走 unwrapEnvelope 的 BUSINESS_ERROR 分支），正常不会走到这里。
+ * 留着是为了代理层/网关直接返回 422，或后端漏挂 handler 时用户仍能看到字段级原因。
+ */
+function readValidationMessage(payload: unknown): string {
+  if (!isRecord(payload) || !Array.isArray(payload.detail)) {
+    return ''
+  }
+  const items = payload.detail.reduce<string[]>((acc, entry) => {
+    if (!isRecord(entry) || typeof entry.msg !== 'string') {
+      return acc
+    }
+    // loc 形如 ["body","password"]，首段是位置标签，去掉后才是字段名
+    const field = Array.isArray(entry.loc)
+      ? entry.loc.filter((part): part is string => typeof part === 'string').slice(1).join('.')
+      : ''
+    acc.push(field ? `${field} ${entry.msg}` : entry.msg)
+    return acc
+  }, [])
+  return items.length > 0 ? `参数校验失败：${items.join('；')}` : ''
 }
 
 // 响应拦截器已把 AxiosResponse 解包成 data，这里按真实对外契约重述签名，
@@ -123,13 +188,14 @@ instance.interceptors.response.use(
 
     const payload = response.data ?? null
     const fallback = `后端返回 HTTP ${response.status}`
-    const message = payload?.message || payload?.error || fallback
+    const message = readValidationMessage(response.data) || payload?.message || payload?.error || fallback
     const rawCode: unknown = payload?.code
+    // 后端回了 trace_id 就以它为准，方便和后端日志对齐；否则退回我们发出的 X-Request-Id
 
     return Promise.reject(new ApiError(message, {
       status: response.status,
       code: isApiErrorCode(rawCode) ? rawCode : 'HTTP_ERROR',
-      requestId,
+      requestId: payload?.trace_id || requestId,
       detail: payload
     }))
   }

@@ -21,11 +21,10 @@ export function useLogout() {
     }
     pending.value = true
     errorMessage.value = ''
-    const controller = new AbortController()
     authStore.clearSession()
 
     try {
-      await logoutRequest({ signal: controller.signal })
+      await logoutRequest()
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : String(error)
     } finally {

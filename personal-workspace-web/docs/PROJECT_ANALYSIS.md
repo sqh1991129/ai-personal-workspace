@@ -389,6 +389,7 @@ demo/
 | --- | --- | --- |
 | `src/views/LoginView.vue` | 路由级编排面：品牌区 + 表单区 + mock 提示 | 从 `useLogin()` 取只读投影，向 `LoginForm` 传 props |
 | `src/components/business/LoginForm.vue` | 凭据表单：字段态 + 本地校验 + 提交 | `v-model` 内部字段；`props: pending/errorMessage/mock*`；`emit('submit', LoginPayload)` |
+| `src/components/business/LoginHero.vue` | 左侧项目背景插画（纯 SVG，无文字节点） | 只有一个可选 `label` prop（无障碍描述）；不依赖 store 与 api |
 | `src/components/base/TextField.vue` | 带标签/错误/密码可见性切换的输入原子件 | `defineModel<string>()` + props；不依赖 store 与 api |
 | `src/components/business/ThemeToggle.vue` | 主题切换按钮（App 外壳与登录页共用） | 依赖 `stores/app.ts` |
 | `src/components/business/UserMenu.vue` | 顶栏当前用户与退出入口 | 依赖 `stores/auth.ts` + `useLogout()` |
@@ -493,15 +494,16 @@ demo/
 ### 13.5 验证证据
 
 - `npm run lint` 0 error、`npm run type-check` 0 error、`npm run build` 成功且**无告警**。
-- 一次性脚本直接加载 `src` 下真实模块（Node 25 原生类型剥离 + 自定义 loader 用 `@vue/compiler-sfc` 编译 SFC），共 149 条断言全部通过：
+- 一次性脚本直接加载 `src` 下真实模块（Node 25 原生类型剥离 + 自定义 loader 用 `@vue/compiler-sfc` 编译 SFC），共 185 条断言全部通过（分类见第 15.4 节，接口契约断言为本轮新增）：
   - 领域逻辑 72 条：行内标记与类型类映射、假流式逐段吐字与取消、chat store 分组/筛选/参数截断、
     `useChatStream` 发送/停止/重新生成、knowledge store 库切换/搜索/上传入表/抽屉、`useRetrieval` 调参联动。
   - 路由与守卫 26 条：真实路由表的 `meta`（layout / module / padded / requiresAuth）、未登录拦截与带参回跳、
     已登录访问 `/login` 回首页、过期会话清理与本地数据移除、回跳白名单 6 条。
-  - 真实组件 SSR 渲染 51 条（35 条结构断言 + 16 条「无 `{{` / `[object Object]` / `undefined` / `NaN` 残留」反向断言）：登录页、外壳（侧栏/顶栏/搜索）、总览（问候/提问框/4 指标卡/最近会话/健康度/待办/连通性/模块入口）、
+  - 真实组件 SSR 渲染 57 条（41 条结构断言 + 16 条「无 `{{` / `[object Object]` / `undefined` / `NaN` 残留」反向断言）：登录页、外壳（侧栏/顶栏/搜索）、总览（问候/提问框/4 指标卡/最近会话/健康度/待办/连通性/模块入口）、
     对话（三栏标记、历史消息、失败气泡、停止标注、代码块、引用、思考、输入区、参数面板）、
     知识库（库列表、文档表格、状态标签、上传区、召回测试、抽屉、`file-type--*` 修饰类）、404 在壳内。
-- 仍未做像素级核对：本会话无法批准启动开发服务器/无头浏览器（审批通道报错）。人工路径见 `README.md`「页面与模块」。
+- 登录插画已做**离线位图核对**：把 `LoginHero.vue` 的 SVG 摘出、按明暗两套令牌取值内联成独立 `.svg`，用工作区自带的 LibreOffice（`soffice --convert-to png`）栅格化后逐项目检查（描边、层级、连接线是否被节点遮住）。
+- 整页像素级核对仍未做：本会话无法批准启动开发服务器/无头浏览器（审批通道报错，且沙箱禁止监听端口）。人工路径见 `README.md`「页面与模块」。
 
 ### 13.6 本轮两项确认的处理（2026-09-03）
 
@@ -510,6 +512,116 @@ demo/
    （global → primitives → modules，固定在 `src/main.ts`）与「色值只在 `global.css`」写成硬约束；
    同步更新了「目录职责」的 `src/styles/` 行、「验证基线」的构建体积数字，以及本档案的 `conventions.component` 与 `config.cssStrategy`。
    日后若要走全量 scoped，需要先修订该节并重新核对三页视觉，不要边写边混用两种口径。
-2. **回归测试（R18 → 暂缓，仍 open）**：用户确认本期不引入测试框架。149 条断言继续以一次性脚本形式存在（未提交进仓库），
+2. **回归测试（R18 → 暂缓，仍 open）**：用户确认本期不引入测试框架。153 条断言继续以一次性脚本形式存在（未提交进仓库），
    因此**改动 `src/views/**`、`src/components/**`、`src/stores/**` 后必须手工重跑核对**，不能只依赖 lint + type-check + build。
    `AGENTS.md` 的「尚未引入（需要时先确认）」已加注暂缓结论，避免后续任务擅自安装 vitest。
+
+---
+
+## 14. 登录页左侧改为项目背景插画（2026-09-03）
+
+用户反馈：左侧「把日常对话、资料检索和重复劳动，收进同一个工作台。」这类标语与三张卖点卡不符合预期，
+要求换成**一张符合项目背景的图片**。
+
+### 14.1 为什么是内联 SVG 而不是位图
+
+| 方案 | 结论 | 原因 |
+| --- | --- | --- |
+| 位图（PNG/AI 生成图） | 未采用 | 主题切换需要两套导出；`src/assets` 走 webpack 资源链，一张装饰图直接进懒加载 chunk 的体积；明暗两版难以长期维护 |
+| 内联 SVG 组件 | **采用** | 颜色全部取 `src/styles/global.css` 令牌（`var(--color-*)`），跟随 `data-theme` 自动切换；零新依赖；纯文本可 diff、可断言 |
+
+符合 `AGENTS.md`「新增颜色只能加令牌变量，不要写死色值」与 vue-best-practices 的「一文件一组件 + `<script setup lang="ts">`」。
+
+### 14.2 画面内容（对应本项目的三条主线）
+
+`src/components/business/LoginHero.vue` 画的是一个工作台窗口，从左到右、从上到下依次是：
+会话列表（首行高亮为当前会话）→ 用户气泡 + 带闪烁光标的流式回答气泡 → 两条引用来源 →
+知识库面板（文档行 + 索引状态点 + 向量分片节点簇）→ 窗口下方虚线连接的「定时任务（规划中）」与「待办清单」两个节点。
+即 `demo/` 三个页面（chat / knowledge / 自动化占位）的抽象缩影，而不是通用装饰图。
+
+- 纯图形，**不含 `<text>` 节点**（避免中文文案在 SVG 里被字体度量撑破），无障碍描述走 `role="img"` + `aria-label`，默认值由 `withDefaults` 提供。
+- 两处动效（光标闪烁、虚线流动）都在 `@media (prefers-reduced-motion: reduce)` 下关闭。
+- 连接线必须画在两个节点**之后**，否则会被节点的不透明底色遮住（栅格化核对时发现并已修复）。
+
+### 14.3 同时删除的内容
+
+`src/views/LoginView.vue` 移除标语 `h1`、描述段落与 `highlights` 三卡数据（含其 `Highlight` 接口和全部 scoped 样式），
+只保留品牌行（`WS` 角标 + `VUE_APP_TITLE`）与插画；`noUnusedLocals` 会因残留死代码直接 build 失败，因此一并清干净。
+
+### 14.4 验证
+
+- `npm run lint` / `npm run type-check` / `npm run build` 均 0 error、无告警；`LoginView` 懒加载 chunk 由 9.43 KiB 增至 17.22 KiB（gzip 4.86 KiB），仍是懒加载，不影响首屏。
+- 一次性核对脚本新增 4 条登录页断言（插画存在、带无障碍描述、原标语与卖点卡不再出现、SVG 内无文字节点），总数 149 → **153**，全部通过。
+
+---
+
+## 15. 对接后端接口（2026-09-03）
+
+依据 `docs/默认模块.md`（后端 `personal-workspace-app` 的 OpenAPI 经 widdershins 生成）把登录与健康检查从 mock 切到真实请求。
+
+### 15.1 接口清单
+
+| 端点 | 方法 | 请求体 | 响应 | 前端落点 |
+| --- | --- | --- | --- | --- |
+| `/api/v1/users/health` | GET | — | `{status, message}` 裸对象 | `src/api/workspace.ts` 的 `HEALTH_PATH` / `checkHealth()` |
+| `/api/v1/users/userLogin` | POST | `UserLoginReq{userId, password}` | `BaseResponse<UserLoginRes{userId}>` | `src/api/auth.ts` 的 `USER_LOGIN_PATH` / `login()` |
+
+`VUE_APP_API_BASE=/api` 是 axios 的 baseURL，所以模块内只写 `/v1/users/...`；开发环境由 `vue.config.js` 的
+`devServer.proxy` 把 `/api` 转发到 `VUE_APP_API_PROXY_TARGET`（默认 `http://127.0.0.1:8000`），生产环境需 Nginx 承担同等职责。
+
+### 15.2 BaseResponse 信封怎么拆
+
+后端所有业务响应都套 `{code, message, data, trace_id, timestamp}`，而 `src/api/http.ts` 的响应拦截器只解到 `AxiosResponse.data`
+（即整个信封）。处理方式是在请求层加通用工具、由领域模块显式选用，而不是在拦截器里全局拆——因为 `/users/health` 不套信封，
+对话/知识库将来也不一定套，全局拆会误伤。
+
+- `ApiEnvelope<T>` + `isApiEnvelope()`：只认「`code` 是数字」这一特征，不符合就当不是信封。
+- `unwrapEnvelope<T>(payload, fallbackMessage)`：HTTP 200 但 `code !== 200` 也判失败，抛 `ApiError(code: 'BUSINESS_ERROR', status: code)`，
+  并把 `trace_id` 落到 `ApiError.requestId`，报障时能和后端日志对齐。
+- `API_ERROR_CODES` 增加 `BUSINESS_ERROR`；消费方仍只 `catch` `ApiError`，不需要感知信封结构。
+- **后端把业务异常和参数校验异常都包成 HTTP 200 + 非 200 的 `code`**（见 `core/exception_handler.py`：业务码 40001、
+  校验码 40000，文案后端已格式化好），所以前端主要靠 `unwrapEnvelope()` 报错，`ApiError.status` 存的是业务码。
+- 裸 422 `HTTPValidationError` 只作为兜底（代理层/网关直接返回、或后端漏挂 handler 时）：`readValidationMessage()` 把它翻成
+  「参数校验失败：password Field required」，`loc` 首段是位置标签（body/query），取字段名时去掉。
+
+### 15.3 契约缺口与前端兜底（对应 issue R20）
+
+`UserLoginRes` 只有一个 `userId`，没有 token / 有效期 / 角色，也没有登出端点。为了不动 auth store 与路由守卫的既有语义，
+`src/api/auth.ts` 的 `toSession()` 做了三处兜底，都带注释标明是过渡实现：
+
+| 字段 | 兜底 | 后端补齐后怎么改 |
+| --- | --- | --- |
+| `token` | `createLocalToken('local', username)` 本地占位 | 直接取服务端 token，删掉占位分支 |
+| `expiresAt` | `null`（本地不判过期，「记住我」会长期有效） | 用服务端 `expiresIn` 算出毫秒时间戳 |
+| `user.roles` | `[]`（当前 UI 不消费） | 取服务端角色数组 |
+| 登出 | `logout()` 不发请求，只由 `stores/auth.ts` 清本地 | 补 `POST /api/v1/users/userLogout` 请求 |
+
+另有几处**后端侧**问题，前端无法绕过，已记进 R20（均为 2026-09-03 读 `personal-workspace-app` 现状所得，
+该目录不属于前端工程，未做任何改动）：
+
+1. `services/userService.py` 把 `str` 型 `req.userId` 回填进声明为 `int` 的 `UserLoginRes.userId`，
+   非数字登录名（例如 `admin`）会在 pydantic 校验处失败变成 500。
+2. `exception_handler.py` 调的是 `BaseResponse.fail(...)`，而 `core/base_response.py` 只定义了 `failure(...)` → 异常处理器自身抛错。
+3. `AppException.__init__(self, message)` 只收 message，`userService.py` 却按 `AppException(code=40001, message=...)` 调用；
+   且 `super().__init__(self.code, ...)` 在 `self.code` 赋值之前。
+4. `UserLoginRes(userId=user.userId)` 取的是 ORM 上不存在的字段（`domain/user.py` 只有 `id`/`username`/`email`）。
+5. 新增的 `core/JWT.py` 尚未接线且自身不可导入（`decode_token` 的 `except` 无函数体）；`timedelta(ACCESS_TOKEN_EXPIRE_MINUTES)`
+   把分钟当成了天，`datetime.now(timezone)` 传的是模块而非时区对象，`SECRET_KEY` 也硬编码在源码里。
+6. 文档把 `/users/health` 的返回写成 `null`，实现实际返回 `{status, message}`——前端按实现写类型。
+
+### 15.4 验证（185 条断言）
+
+- `npm run lint` 0 error、`npm run type-check` 0 error、`npm run build` 成功且无告警（入口 `index.*.js` 55.66 → 56.37 KiB，
+  信封工具进了入口 chunk；`LoginView` 懒加载 chunk 不变）。
+- 断言总数 153 → **185**：领域逻辑 72 + 路由表与守卫 26 + 真实组件 SSR 渲染 57 + **真实接口契约 30**。
+- 契约脚本用一个假 axios adapter 接管**真实** axios 实例，因此 baseURL 拼接、请求体序列化、请求/响应拦截器、
+  信封拆解与错误翻译全部走线上代码，覆盖：URL 为 `/api/v1/users/userLogin`、请求体只有 `userId`/`password`（不含 `remember`）、
+  `X-Request-Id` 注入、登录后续请求自动带 `Bearer`、`code=40001` → `BUSINESS_ERROR` 且 message 原样透出、
+  `code=40000` 校验信封同样走 BUSINESS_ERROR、非信封 → `UNKNOWN`、兜底裸 422 → 中文校验文案、`logout()` 不产生请求。
+- SSR 脚本另加两条环境相关断言：演示账号提示（`.login-form__mock`）与页脚的请求去向说明都随 `VUE_APP_MOCK_AUTH` 切换，两种取值下各 57 条全过。
+- **未能做真实联调**：沙箱禁止监听端口且审批通道故障，无法向 `127.0.0.1:8000` 发真请求。人工核对路径见 `README.md`。
+
+### 15.5 默认值变更
+
+`.env.development` 的 `VUE_APP_MOCK_AUTH` 由 `true` 改为 `false`（对接即生效）。后端未启动或需要 admin/admin 演示时改回 `true`，
+业务代码不需要动。`VUE_APP_MOCK_API`（对话/知识库）仍为 `true`，等那两个域的契约到位再切。

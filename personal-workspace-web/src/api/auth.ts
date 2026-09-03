@@ -1,4 +1,4 @@
-import http, { ApiError, type RequestOptions } from '@/api/http'
+import http, { ApiError, isRecord, unwrapEnvelope, type RequestOptions } from '@/api/http'
 import {
   MOCK_CREDENTIALS,
   MOCK_LATENCY_MS,
@@ -8,33 +8,23 @@ import {
 } from '@/constants/auth'
 import type { AuthSession, LoginPayload } from '@/types/auth'
 
-export const AUTH_LOGIN_PATH = '/auth/login'
-
-export const AUTH_LOGOUT_PATH = '/auth/logout'
+/**
+ * 接口契约来源：docs/默认模块.md（由后端 personal-workspace-app 的 OpenAPI 生成）。
+ * 完整地址是 POST {VUE_APP_API_BASE}/v1/users/userLogin；开发环境由 vue.config.js 的
+ * devServer.proxy 把 /api 转发到 VUE_APP_API_PROXY_TARGET 指向的 FastAPI 服务。
+ */
+export const USER_LOGIN_PATH = '/v1/users/userLogin'
 
 /**
- * 后端 personal-workspace-app 尚未提供 /auth/* 接口，默认由 .env.* 决定走假数据还是真请求。
- * 换成真实后端只需把 VUE_APP_MOCK_AUTH 置为 false，业务代码不需要改。
+ * 默认走真实后端；置 true 回到本地假数据（admin / admin）方便没有后端时演示。
+ * 切换只改环境变量，业务代码不需要动。
  */
 export const IS_MOCK_AUTH: boolean = process.env.VUE_APP_MOCK_AUTH === 'true'
 
-// 响应体按“未知”处理：可选字段 + 索引签名，契约稳定后再收紧（AGENTS.md 约定）。
-interface RawUser {
-  id?: string | number
-  username?: string
-  displayName?: string
-  name?: string
-  roles?: unknown
-  [key: string]: unknown
-}
-
-interface RawSession {
-  token?: string
-  accessToken?: string
-  user?: RawUser
-  /** 有效期秒数，字段名以后端为准 */
-  expiresIn?: number
-  [key: string]: unknown
+/** 请求体即文档里的 UserLoginReq：登录名走 userId 字段，不是前端内部的 username。 */
+interface UserLoginReq {
+  userId: string
+  password: string
 }
 
 function asString(value: unknown): string {
@@ -44,30 +34,38 @@ function asString(value: unknown): string {
   return typeof value === 'number' ? String(value) : ''
 }
 
-function asStringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+/**
+ * UserLoginRes 只声明了一个 userId（文档写 integer，后端实现把请求里的字符串原样回填，
+ * 所以两种类型都要接住）。除此之外后端不发 token、不发角色、不发有效期。
+ */
+function readUserId(data: unknown): string {
+  return isRecord(data) ? asString(data.userId) : ''
 }
 
-function normalizeSession(raw: RawSession, fallbackUsername: string): AuthSession {
-  const issuedAt = Date.now()
-  const user = raw.user ?? {}
-  const username = asString(user.username) || fallbackUsername
+/** mock 与真后端都用它兜底 token：后端签发真 token 前，请求层的 Bearer 只能带本地占位值。 */
+function createLocalToken(kind: 'mock' | 'local', username: string): string {
+  return `${kind}.${username}.${Date.now().toString(36)}`
+}
+
+/**
+ * 把后端响应补齐成前端会话。后端没给有效期，expiresAt 置 null 表示本地不做过期判断
+ * （utils/authSession.ts 与 stores/auth.ts 已按这个语义实现）。
+ * username / displayName 用提交时的登录名回显，因为 UserLoginRes 里没有用户名字段。
+ */
+function toSession(data: unknown, payload: LoginPayload): AuthSession {
+  const id = readUserId(data) || payload.username
 
   return {
-    token: asString(raw.token) || asString(raw.accessToken),
-    issuedAt,
-    expiresAt: typeof raw.expiresIn === 'number' ? issuedAt + raw.expiresIn * 1000 : null,
+    token: createLocalToken('local', payload.username),
+    issuedAt: Date.now(),
+    expiresAt: null,
     user: {
-      id: asString(user.id) || username,
-      username,
-      displayName: asString(user.displayName) || asString(user.name) || username,
-      roles: asStringList(user.roles)
+      id,
+      username: payload.username,
+      displayName: payload.username,
+      roles: []
     }
   }
-}
-
-function createMockToken(username: string): string {
-  return `mock.${username}.${Date.now().toString(36)}`
 }
 
 /** 让 mock 具备可感知的延迟，并且能被 AbortSignal 取消，行为与 axios 请求一致 */
@@ -96,13 +94,14 @@ async function loginWithMock(payload: LoginPayload, options: RequestOptions): Pr
   const matched = payload.username === MOCK_CREDENTIALS.username &&
     payload.password === MOCK_CREDENTIALS.password
   if (!matched) {
-    // 抛错形态与真实后端经 http.ts 拦截器归一化后的结果保持一致，避免切换时行为漂移。
-    throw new ApiError('用户名或密码错误', { status: 401, code: 'HTTP_ERROR' })
+    // 抛错形态对齐真实后端：全局处理器把业务异常包成 HTTP 200 + code 40001，经 unwrapEnvelope 后就是这个样子，
+    // 避免 mock 与真接口之间出现行为漂移。
+    throw new ApiError('用户名或密码错误', { status: 40001, code: 'BUSINESS_ERROR' })
   }
 
   const issuedAt = Date.now()
   return {
-    token: createMockToken(payload.username),
+    token: createLocalToken('mock', payload.username),
     issuedAt,
     expiresAt: issuedAt + MOCK_SESSION_TTL_MS,
     user: {
@@ -114,21 +113,29 @@ async function loginWithMock(payload: LoginPayload, options: RequestOptions): Pr
   }
 }
 
+async function loginWithServer(payload: LoginPayload, options: RequestOptions): Promise<AuthSession> {
+  // 后端字段名是 userId（语义即登录名），remember 是前端本地的持久化开关，不发给后端。
+  const body: UserLoginReq = { userId: payload.username, password: payload.password }
+  const envelope = await http.post<unknown>(
+    USER_LOGIN_PATH,
+    body,
+    { signal: options.signal }
+  )
+  // HTTP 200 但 code != 200 也在这里抛 BUSINESS_ERROR
+  return toSession(unwrapEnvelope<unknown>(envelope, '登录失败'), payload)
+}
+
 export function login(payload: LoginPayload, options: RequestOptions = {}): Promise<AuthSession> {
   if (IS_MOCK_AUTH) {
     return loginWithMock(payload, options)
   }
-  // remember 是前端本地的持久化开关，不发给后端。
-  return http
-    .post<RawSession>(AUTH_LOGIN_PATH, { username: payload.username, password: payload.password }, {
-      signal: options.signal
-    })
-    .then((raw) => normalizeSession(raw, payload.username))
+  return loginWithServer(payload, options)
 }
 
-export async function logout(options: RequestOptions = {}): Promise<void> {
-  if (IS_MOCK_AUTH) {
-    return
-  }
-  await http.post<void>(AUTH_LOGOUT_PATH, undefined, { signal: options.signal })
+/**
+ * 接口文档目前只有 /users/health 与 /users/userLogin，没有登出端点，后端也不签发服务端 token，
+ * 因此退出只需由 stores/auth.ts 清掉本地会话。后端补上登出接口后，在这里改成真实请求即可。
+ */
+export async function logout(): Promise<void> {
+  return Promise.resolve()
 }

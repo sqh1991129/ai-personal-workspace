@@ -28,7 +28,7 @@ Vue 3.5 · TypeScript 5.4（`strict`，`vue-tsc` 检查，`ts-loader` 转译）�
 | `VUE_APP_API_TIMEOUT` | 请求超时（毫秒） | `15000` |
 | `VUE_APP_DEV_PORT` | 开发服务器端口 | `8080` |
 | `VUE_APP_API_PROXY_TARGET` | 开发代理转发目标（后端地址） | `http://127.0.0.1:8000` |
-| `VUE_APP_MOCK_AUTH` | 登录是否走本地假数据（`true` / `false`） | 开发 `true`，生产 `false` |
+| `VUE_APP_MOCK_AUTH` | 登录是否走本地假数据（`true` / `false`） | `false`（已对接真实后端）；需要 admin / admin 演示时临时置 `true` |
 | `VUE_APP_MOCK_API` | 对话与知识库是否走本地假数据（含假流式、假索引队列） | 开发与生产均 `true`，后端就绪后置 `false` |
 
 - `.env.development` / `.env.production` 随仓库提交，只放非敏感默认值。
@@ -53,6 +53,7 @@ src/
 ├── components/business/    # 外壳（AppSidebar/AppTopbar/UserMenu/ThemeToggle/ToastLayer）
 │                           # 对话（SessionList/MessageStream/MessageItem/ChatComposer/ChatParamsPanel）
 │                           # 知识库（KbList/DocumentTable/UploadDropzone/ChunkList/RecallTester）
+│                           # 登录（LoginForm 表单 · LoginHero 左侧项目背景插画）
 └── styles/                 # global.css（令牌+基础）· primitives.css（外壳与原子）· modules.css（三个模块）
 ```
 
@@ -61,16 +62,31 @@ src/
 ## 登录与鉴权
 
 - 未登录访问任何受保护路由（`meta.requiresAuth`）都会跳到 `/login`，并把原地址放进 `?redirect=`，登录成功后回跳。
-- 后端 `/auth/*` 尚未实现，开发环境默认 `VUE_APP_MOCK_AUTH=true`，演示账号 **admin / admin**（约 600ms 假延迟）。
-  失败时 mock 抛出的错误与真实后端经请求层归一化后同形（HTTP 401），所以切换只改环境变量，不动业务代码。
+- 登录页左侧是一张贴合项目背景的内联 SVG 插画（`src/components/business/LoginHero.vue`）：会话列表 → 流式回答与引用来源 → 知识库召回 → 规划中的自动化任务。颜色全部取 `src/styles/global.css` 的令牌变量，因此明暗主题自动切换；纯图形无文字节点，无障碍描述走 `aria-label`。
+- 登录已对接真实后端：`POST {VUE_APP_API_BASE}/v1/users/userLogin`，请求体是文档里的 `UserLoginReq{userId, password}`
+  （登录名走 `userId` 字段，`remember` 只影响前端本地持久化，不发给后端）。契约见 `docs/默认模块.md`。
+- 响应统一套 `BaseResponse{code, message, data, trace_id, timestamp}`，由 `src/api/http.ts` 的 `unwrapEnvelope()` 拆解：
+  HTTP 200 但 `code != 200` 也算失败（`ApiError.code = 'BUSINESS_ERROR'`，`ApiError.status` 存业务码），
+  `trace_id` 落到 `ApiError.requestId` 便于和后端日志对齐。后端的业务异常与参数校验异常都由全局处理器包成
+  HTTP 200 + `code` 40001 / 40000，文案已在后端格式化好、前端原样透出；裸 422 `HTTPValidationError` 只做兜底翻译。
+- 后端 `UserLoginRes` 只有 `userId`，没有 token / 有效期 / 角色，也没有登出端点，因此前端用本地占位 token、
+  `expiresAt = null`（勾选「记住我」会长期有效）、退出只清本地会话。后端补齐后改 `src/api/auth.ts` 的 `toSession()` 与 `logout()` 即可（issue R20）。
+- `VUE_APP_MOCK_AUTH=true` 时回到本地演示：演示账号 **admin / admin**（约 600ms 假延迟），登录表单下方出现「演示模式 / 一键填入」提示，
+  关闭时该提示自动隐藏。
 - 勾选「记住我」才会把会话写入 `localStorage['workspace.session']`；不勾选时只存内存，刷新即回到登录页。
 - 登录后所有 `/api` 请求自动带上 `Authorization: Bearer <token>`（由 `src/stores/auth.ts` 同步给 `src/api/http.ts`）。
-- 接真实后端：`.env.*` 里把 `VUE_APP_MOCK_AUTH` 置为 `false`，并按 `src/api/auth.ts` 的 `RawSession`
-  对齐字段（`token` / `user.username` / `expiresIn`），必要时在 `normalizeSession()` 里收敛契约。
+- 后端连通性探测走 `GET {VUE_APP_API_BASE}/v1/users/health`（该端点返回裸对象，不套 `BaseResponse`），
+  总览页「后端连通性」卡片展示状态与响应摘要。
+- **后端当前实现还跑不通登录**（不影响前端接线，见 `docs/project-profile.json` issue R20）：
+  `exception_handler.py` 调了不存在的 `BaseResponse.fail`、`AppException` 的调用签名不匹配、
+  `UserLoginRes(userId=user.userId)` 取了 ORM 上没有的字段，`core/JWT.py` 尚未接线且自身不可导入。
+  后端修好之前，本地演示请把 `VUE_APP_MOCK_AUTH` 置回 `true`。
 
-人工核对路径：`npm run serve` → 访问 `/` 应跳到 `/login` → 用 admin/admin 登录 → 回到工作台总览，
-侧栏底部显示当前账号（退出按钮在头像右侧）→ 依次点侧栏「对话」「知识库」核对三栏/两栏与抽屉 →
-退出后刷新 `/` 仍被拦在登录页。
+人工核对路径：先启动后端（`personal-workspace-app`，需要 Postgres）→ `npm run serve` → 访问 `/` 应跳到 `/login` →
+提交账号密码，Network 里应看到 `POST /api/v1/users/userLogin` 且请求体为 `{userId, password}` → 登录成功回到工作台总览，
+侧栏底部显示当前账号（退出按钮在头像右侧）→ 总览页点「检测」应命中 `GET /api/v1/users/health` →
+依次点侧栏「对话」「知识库」核对三栏/两栏与抽屉 → 退出后刷新 `/` 仍被拦在登录页。
+后端未启动时登录会提示「无法连接后端服务（/api）」，把 `VUE_APP_MOCK_AUTH` 改回 `true` 即可继续用 admin / admin 演示。
 
 ## 页面与模块
 

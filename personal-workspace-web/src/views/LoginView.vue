@@ -1,25 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import LoginHero from '@/components/business/LoginHero.vue'
 import LoginForm from '@/components/business/LoginForm.vue'
 import ThemeToggle from '@/components/business/ThemeToggle.vue'
-import { IS_MOCK_AUTH } from '@/api/auth'
+import { IS_MOCK_AUTH, USER_LOGIN_PATH } from '@/api/auth'
+import { API_BASE_URL } from '@/api/http'
 import { DEFAULT_REDIRECT_PATH, MOCK_CREDENTIALS } from '@/constants/auth'
 import { useLogin } from '@/composables/useLogin'
 import type { LoginPayload } from '@/types/auth'
 
-interface Highlight {
-  icon: 'chat' | 'book' | 'task'
-  title: string
-  note: string
-}
-
 const appTitle: string = process.env.VUE_APP_TITLE || '个人 AI 工作台'
 
-const highlights: Highlight[] = [
-  { icon: 'chat', title: '对话', note: '会话列表、流式回答与引用来源' },
-  { icon: 'book', title: '知识库', note: '文档索引、分片详情与召回测试' },
-  { icon: 'task', title: '任务自动化', note: '定时任务与主动跟进（规划中）' }
-]
+/** 页脚把真实端点写出来，便于确认当前确实走的是后端而不是本地假数据 */
+const loginEndpoint: string = `${API_BASE_URL}${USER_LOGIN_PATH}`
 
 const { isPending, errorMessage, redirectTarget, submit } = useLogin()
 
@@ -39,33 +32,7 @@ function onFormSubmit(payload: LoginPayload): void {
         <span class="login__mark">WS</span>
         <span>{{ appTitle }}</span>
       </header>
-      <h1 class="login__slogan">把日常对话、资料检索和重复劳动，收进同一个工作台。</h1>
-      <p class="login__desc">本地部署的个人 AI 工作台，数据与偏好只保存在你自己的浏览器和服务器上。</p>
-      <ul class="login__highlights">
-        <li v-for="item in highlights" :key="item.icon">
-          <span class="login__highlight-icon" aria-hidden="true">
-            <span class="icon">
-              <svg v-if="item.icon === 'chat'" viewBox="0 0 24 24">
-                <path d="M20 15a2 2 0 0 1-2 2H8l-4 3V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" />
-                <path d="M8 9h8M8 12.5h5" />
-              </svg>
-              <svg v-else-if="item.icon === 'book'" viewBox="0 0 24 24">
-                <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" />
-                <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5A1.5 1.5 0 0 0 20 18.5z" />
-              </svg>
-              <svg v-else viewBox="0 0 24 24">
-                <rect x="4" y="4" width="16" height="16" rx="2" />
-                <path d="M8 10l2.5 2.5L16 7" />
-                <path d="M8 16h8" />
-              </svg>
-            </span>
-          </span>
-          <span class="login__highlight-text">
-            <strong>{{ item.title }}</strong>
-            <small>{{ item.note }}</small>
-          </span>
-        </li>
-      </ul>
+      <LoginHero />
     </aside>
 
     <div class="login__stage">
@@ -90,7 +57,12 @@ function onFormSubmit(payload: LoginPayload): void {
       </div>
 
       <p class="login__foot">
-        登录态仅保存在本浏览器；后端接口就绪后把 <code>VUE_APP_MOCK_AUTH</code> 置为 <code>false</code> 即走真实鉴权。
+        <template v-if="IS_MOCK_AUTH">
+          登录态仅保存在本浏览器；演示模式下把 <code>VUE_APP_MOCK_AUTH</code> 置为 <code>false</code> 即走真实鉴权。
+        </template>
+        <template v-else>
+          登录请求发往 <code>{{ loginEndpoint }}</code>；登录态仅保存在本浏览器。
+        </template>
       </p>
     </div>
   </section>
@@ -109,8 +81,9 @@ function onFormSubmit(payload: LoginPayload): void {
 
 .login__intro {
   display: grid;
-  gap: var(--space-3);
-  max-width: 520px;
+  gap: var(--space-4);
+  align-content: center;
+  max-width: 620px;
   justify-self: end;
 }
 
@@ -132,62 +105,6 @@ function onFormSubmit(payload: LoginPayload): void {
   color: var(--color-on-accent);
   font-size: 12px;
   letter-spacing: 0.02em;
-}
-
-.login__slogan {
-  margin: 0;
-  font-size: var(--font-2xl);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.35;
-}
-
-.login__desc {
-  margin: 0;
-  color: var(--color-muted);
-}
-
-.login__highlights {
-  display: grid;
-  gap: var(--space-2);
-  margin: var(--space-2) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.login__highlights li {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.login__highlight-icon {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-}
-
-.login__highlight-text {
-  display: grid;
-  gap: 2px;
-}
-
-.login__highlight-text strong {
-  font-size: var(--font-sm);
-}
-
-.login__highlight-text small {
-  color: var(--color-muted);
-  font-size: var(--font-xs);
 }
 
 .login__stage {
@@ -262,7 +179,11 @@ function onFormSubmit(payload: LoginPayload): void {
 
   .login__intro {
     justify-self: stretch;
-    max-width: 460px;
+    max-width: 520px;
+  }
+
+  .login__brand {
+    justify-content: center;
   }
 
   .login__stage {

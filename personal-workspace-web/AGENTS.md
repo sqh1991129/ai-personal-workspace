@@ -95,9 +95,13 @@ const healthState = ref('idle' as any)
 - `npm run type-check`：0 error（`vue-tsc --noEmit`）。
 - `npm run build`：成功且无 webpack 告警；`dist/js/chunk-vendors.*.js` 约 208 KiB（gzip 约 74 KiB）、入口约 293 KiB，
   无 `.map` 产物（`productionSourceMap: false`）。体积阈值与 `runtimeChunk: 'single'` 的取舍见 `vue.config.js` 注释。
-- 页面渲染正确性目前由一次性断言脚本覆盖（工程内暂无测试框架，见 issue R18）；改视图后请重跑对应核对，不要只信 lint。
+- 页面渲染与接口契约正确性目前由一次性断言脚本覆盖（当前 185 条：领域逻辑 72 + 路由与守卫 26 + SSR 渲染 57 + 接口契约 30；
+  工程内暂无测试框架，见 issue R18）；改 `src/views/**`、`src/components/**`、`src/stores/**`、`src/api/**` 后请重跑对应核对，不要只信 lint。
 - 负向验证过：在 `.ts` 里放 `any`/未使用变量，`npm run lint` 与 `npm run build` 都会失败（证明 TS 文件确实进了规则与 webpack 链路）。
-- 首页「后端连通性」卡片：后端未实现时返回 `ECONNREFUSED` 代理错误属预期，不要为此改前端代码。
+- 登录已按 `docs/默认模块.md` 对接真实后端（`POST /api/v1/users/userLogin`，`VUE_APP_MOCK_AUTH=false`）；
+  响应统一套 `BaseResponse` 信封，拆信封只用 `src/api/http.ts` 的 `unwrapEnvelope()`，**不要**在响应拦截器里全局拆
+  （`/api/v1/users/health` 返回裸对象，对话/知识库将来也不一定套信封）。后端缺口见 issue R20。
+- 首页「后端连通性」卡片打 `GET /api/v1/users/health`：后端未启动时返回 `ECONNREFUSED` 代理错误属预期，不要为此改前端代码。
 
 ## 分支与提交
 

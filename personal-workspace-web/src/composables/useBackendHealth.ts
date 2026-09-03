@@ -1,6 +1,6 @@
 import { computed, onScopeDispose, shallowRef } from 'vue'
 import { API_BASE_URL, isApiError } from '@/api/http'
-import { checkHealth } from '@/api/workspace'
+import { checkHealth, HEALTH_PATH } from '@/api/workspace'
 import type { StatusState } from '@/types/ui'
 
 function preview(payload: unknown): string {
@@ -20,7 +20,7 @@ export function useBackendHealth() {
   const detail = shallowRef('尚未发起检测')
   let controller: AbortController | null = null
 
-  const healthPath = `${API_BASE_URL}/health`
+  const healthPath = `${API_BASE_URL}${HEALTH_PATH}`
   const isChecking = computed<boolean>(() => state.value === 'checking')
 
   async function probe(): Promise<void> {

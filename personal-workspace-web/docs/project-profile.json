@@ -1,6 +1,6 @@
 {
   "profile": "personal-workspace-web/project-profile",
-  "profileVersion": 5,
+  "profileVersion": 6,
   "updatedAt": "2026-09-03",
   "phase": "P1-done+P2/P3-mocked",
   "humanAnalysis": "docs/PROJECT_ANALYSIS.md",
@@ -253,7 +253,7 @@
       "VUE_APP_API_TIMEOUT": "15000",
       "VUE_APP_DEV_PORT": "8080 (development only)",
       "VUE_APP_API_PROXY_TARGET": "http://127.0.0.1:8000 (development only)",
-      "VUE_APP_MOCK_AUTH": "true (development) / false (production)",
+      "VUE_APP_MOCK_AUTH": "false (development 与 production，已对接真实后端) / 需要 admin-admin 演示时临时置 true",
       "VUE_APP_MOCK_API": "true (development 与 production 演示默认) / 后端就绪后置 false"
     },
     "alias": { "@": "src" },
@@ -304,6 +304,7 @@
         "src/components/business/DocumentTable.vue",
         "src/components/business/KbList.vue",
         "src/components/business/LoginForm.vue",
+        "src/components/business/LoginHero.vue",
         "src/components/business/MessageItem.vue",
         "src/components/business/MessageStream.vue",
         "src/components/business/RecallTester.vue",
@@ -465,7 +466,7 @@
       "buildWarnings": 0,
       "buildTimeMs": 9876,
       "artifacts": [
-        { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 207.67, "gzipKiB": 74.05 },
+        { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 207.76, "gzipKiB": 74.07 },
         { "file": "dist/js/index.*.js", "sizeKiB": 55.66, "gzipKiB": 21.08 },
         {
           "file": "dist/js/runtime.*.js",
@@ -486,10 +487,10 @@
           "note": "KnowledgeView 懒加载 chunk"
         },
         {
-          "file": "dist/js/952.*.js",
-          "sizeKiB": 9.43,
-          "gzipKiB": 3.75,
-          "note": "LoginView 懒加载 chunk"
+          "file": "dist/js/917.*.js",
+          "sizeKiB": 17.22,
+          "gzipKiB": 4.86,
+          "note": "LoginView 懒加载 chunk（含 LoginHero 插画）"
         },
         {
           "file": "dist/css/index.*.css",
@@ -501,15 +502,42 @@
       "entrySizeKiB": 293,
       "perfHintHandling": "runtimeChunk 独立（5.26 KiB）+ 阈值上调到 entry 400 KiB / 单文件 250 KiB（未关闭 hints），见 vue.config.js",
       "assertions": {
-        "count": 149,
-        "passed": 149,
+        "count": 153,
+        "passed": 153,
         "harness": "一次性脚本直接 import src 下真实模块（Node 25 原生类型剥离 + 自定义 loader 用 @vue/compiler-sfc 编译 SFC）",
-        "breakdown": { "领域逻辑": 72, "路由表与守卫": 26, "真实组件 SSR 渲染": 51 },
+        "breakdown": { "领域逻辑": 72, "路由表与守卫": 26, "真实组件 SSR 渲染": 55 },
         "ssrNegativeChecks": "四页输出均不含 {{、[object Object]、undefined、NaN",
         "committed": false
       },
       "visualChecked": false,
-      "visualNote": "审批通道故障，无法启动开发服务器/无头浏览器；像素级核对留给人工（路径见 README「页面与模块」）"
+      "visualNote": "整页像素级核对仍留给人工（审批通道故障 + 沙箱禁止监听端口，见 README「页面与模块」）；LoginHero 插画已用工作区自带 LibreOffice 栅格化成 PNG 做过离线核对"
+    },
+    "apiIntegration": {
+      "verifiedAt": "2026-09-03",
+      "specSource": "docs/默认模块.md",
+      "lintPassed": true,
+      "typeCheckPassed": true,
+      "buildPassed": true,
+      "buildWarnings": 0,
+      "buildTimeMs": 10783,
+      "artifacts": [
+        { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 207.76, "gzipKiB": 74.07 },
+        { "file": "dist/js/index.*.js", "sizeKiB": 56.37, "gzipKiB": 21.33, "note": "信封工具进入口 chunk，+0.71 KiB" },
+        { "file": "dist/js/917.*.js", "sizeKiB": 17.22, "gzipKiB": 4.87, "note": "LoginView 懒加载 chunk" }
+      ],
+      "assertions": {
+        "count": 185,
+        "passed": 185,
+        "breakdown": { "领域逻辑": 72, "路由表与守卫": 26, "真实组件 SSR 渲染": 57, "真实接口契约": 30 },
+        "contractHarness": "假 adapter 接管真实 axios 实例，拦截器链 / baseURL 拼接 / body 序列化 / 信封拆解 / 错误翻译全部走真实代码",
+        "committed": false
+      },
+      "endpointsWired": [
+        { "method": "POST", "path": "/api/v1/users/userLogin", "request": "UserLoginReq{userId,password}", "response": "BaseResponse<UserLoginRes{userId}>；业务码 40001 与校验码 40000 也以 HTTP 200 + 信封返回" },
+        { "method": "GET", "path": "/api/v1/users/health", "request": "-", "response": "{status,message}（裸对象，不套 BaseResponse）" }
+      ],
+      "liveProbeBlocked": "沙箱禁止监听端口且审批通道故障，未能对 127.0.0.1:8000 发真实请求；契约正确性由假 adapter 断言覆盖",
+      "visualChecked": false
     },
     "pages": ["/login", "/", "/chat", "/knowledge"]
   },
@@ -584,7 +612,7 @@
       "status": "open",
       "path": "personal-workspace-app",
       "problem": "后端 index.py 为空，接口契约未定义；对话/知识库/登录全部依赖前端 mock",
-      "next": "定义 /api/health、/auth/login、/chat/sessions、/chat/completions(SSE)、/kb/* 契约后逐域把 VUE_APP_MOCK_* 置 false"
+      "next": "登录与健康检查已按 docs/默认模块.md 对接（POST /api/v1/users/userLogin、GET /api/v1/users/health）；剩 /chat/sessions、/chat/completions(SSE)、/kb/* 契约定义后再把 VUE_APP_MOCK_API 置 false"
     },
     {
       "id": "R7",
@@ -629,10 +657,19 @@
     {
       "id": "R16",
       "priority": "P1",
-      "status": "open",
+      "status": "resolved",
       "path": "src/api/auth.ts",
       "problem": "登录仍走 mock，凭据写在前端常量里，不具备真实安全性",
-      "next": "后端提供 /auth/login、/auth/logout 后把 VUE_APP_MOCK_AUTH 置 false，并按真实契约收紧 RawSession 与错误码（考虑新增 AUTH_FAILED）"
+      "resolution": "2026-09-03 按 docs/默认模块.md 对接真实接口：POST {VUE_APP_API_BASE}/v1/users/userLogin，请求体 UserLoginReq{userId,password}，响应按 BaseResponse<UserLoginRes> 拆信封（code!=200 归一化为 BUSINESS_ERROR，trace_id 落到 ApiError.requestId），.env.development 默认 VUE_APP_MOCK_AUTH=false，mock 保留为演示开关",
+      "next": "服务端 token / 有效期 / 角色与登出端点补齐前，前端仍用本地占位 token 且 expiresAt=null（见 R20）"
+    },
+    {
+      "id": "R20",
+      "priority": "P1",
+      "status": "open",
+      "path": "personal-workspace-app（后端）",
+      "problem": "对接 docs/默认模块.md 时发现后端契约不足以支撑真鉴权：UserLoginRes 只有 userId，没有 token / 有效期 / 角色，也没有登出端点；UserService.user_login 把 str 型 req.userId 回填进声明为 int 的 UserLoginRes.userId，非数字登录名会在 pydantic 校验处炸成 500；接口文档把 /users/health 的返回写成 null，实现实际返回 {status,message}",
+      "next": "后端先修四处会直接导致登录 500 的实现问题：exception_handler.py 调 BaseResponse.fail 但 base_response.py 只定义了 failure；AppException.__init__ 只收 message 却被按 (code=, message=) 调用且 super().__init__ 早于 self.code 赋值；UserLoginRes(userId=user.userId) 取的是 domain/user.py 上不存在的字段；新增 core/JWT.py 不可导入（decode_token 的 except 无函数体）、timedelta(分钟) 实为天数、datetime.now(timezone) 传了模块、SECRET_KEY 硬编码。修完再签发真 token（建议 JWT + expiresIn）并补 /api/v1/users/userLogout 与用户信息字段；前端在 src/api/auth.ts 的 toSession() 里改成直接取服务端字段（去掉 createLocalToken 兜底与 logout 空实现），并修正 health 端点的 OpenAPI 响应模型"
     },
     {
       "id": "R14",
@@ -657,7 +694,16 @@
       "status": "open",
       "path": "src/**",
       "problem": "三个模块的渲染正确性只由一次性 SSR 断言覆盖，工程内没有测试框架，无法留作回归",
-      "next": "2026-09-03 用户确认暂缓，不引入测试框架。将来需要时先对齐选型（建议 vitest + @vue/test-utils），再把 149 条断言固化成用例；在此之前改视图必须重跑一次性核对脚本"
+      "next": "2026-09-03 用户确认暂缓，不引入测试框架。将来需要时先对齐选型（建议 vitest + @vue/test-utils），再把 153 条断言固化成用例；在此之前改视图必须重跑一次性核对脚本"
+    },
+    {
+      "id": "R19",
+      "priority": "P3",
+      "status": "resolved",
+      "path": "src/views/LoginView.vue, src/components/business/LoginHero.vue",
+      "problem": "登录页左侧是标语 + 三张卖点卡（「把日常对话、资料检索和重复劳动，收进同一个工作台。」），与用户预期不符，应换成符合项目背景的图片",
+      "resolution": "2026-09-03 删除标语/描述/卖点卡及其样式，新增内联 SVG 插画组件 LoginHero（会话列表→流式对话→引用→知识库召回→自动化任务），颜色全取 global.css 令牌故明暗主题自动跟随；不引入位图与依赖",
+      "next": "如后续需要位图版（AI 生成或设计师交付），需同时提供明暗两版并重新核对体积；当前 SVG 方案已进懒加载 chunk（17.22 KiB / gzip 4.86 KiB）"
     }
   ],
   "conventions": {
@@ -716,7 +762,7 @@
         "设计令牌与样式层并入 src/styles（primitives.css + modules.css）",
         "路由拆分为 routes/guards/index，新增 /chat 与 /knowledge"
       ],
-      "tasks": ["品牌资源与 favicon", "后端接口契约（含 /auth/*，R16）"]
+      "tasks": ["品牌资源与 favicon", "对话与知识库接口契约（R10 剩余部分、R20）"]
     },
     {
       "phase": "P2",
