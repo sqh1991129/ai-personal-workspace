@@ -15,7 +15,6 @@ def get_chat_model(model_name: str) -> BaseChatModel:
     # if model_name.startswith("gemini"):
     #     return ChatOpenAI(
     #         model="gemini-3.6-flash",
-    #         api_key="AQ.Ab8RN6JB9sUrd_PYPZcK3trc_bWbjIX-4qtAqMc4h5BellpJNQ",
     #         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
     #         temperature=0,
     #         streaming=True,
