@@ -9,9 +9,10 @@ from personal_workspace_app.core.model_manager import get_chat_model
 @pytest.mark.parametrize("text", ["你好"])
 @pytest.mark.asyncio
 async def test_chat(text: str):
+    #AQ.Ab8RN6JB9sUrd_PYPZcK3trc_bWbjIX-4qtAqMc4h5BellpJNQ
     # chat = ChatOpenAI(
     #     model="gemini-3.6-flash",
-    #     api_key="AQ.Ab8RN6JB9sUrd_PYPZcK3trc_bWbjIX-4qtAqMc4h5BellpJNQ",
+    #     api_key="AQ.key",
     #     base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
     #     temperature=0,
     #     streaming=True

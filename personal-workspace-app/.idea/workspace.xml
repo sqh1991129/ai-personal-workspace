@@ -5,70 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c330de87-598b-42fa-a08d-7284ad9699d8" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/personal-workspace-app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/personal-workspace-app.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/poetry.lock" beforeDir="false" afterPath="$PROJECT_DIR$/poetry.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/__main__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/__main__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/core/base_response.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/core/base_response.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/core/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/core/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/core/exception_handler.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/core/exception_handler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/core/exceptions.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/core/exceptions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/core/logger.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/core/logger.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/services/userService.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/services/userService.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/.env.development" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/.env.development" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/.env.production" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/.env.production" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/AGENTS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/docs/PROJECT_ANALYSIS.md" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/docs/PROJECT_ANALYSIS.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/docs/project-profile.json" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/docs/project-profile.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/docs/默认模块.md" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/docs/默认模块.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/api/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/api/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/api/chat.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/api/chat.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/api/http.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/api/http.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/api/knowledge.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/api/knowledge.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/api/workspace.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/api/workspace.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/base/InlineText.vue" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/base/StatCard.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/base/StatCard.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/AppSidebar.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/AppSidebar.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/AppTopbar.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/AppTopbar.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/ChatComposer.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/ChatComposer.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/ChatParamsPanel.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/ChatParamsPanel.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/ChunkList.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/ChunkList.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/DocumentTable.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/DocumentTable.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/KbList.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/KbList.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/LoginForm.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/LoginForm.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/MessageItem.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/MessageItem.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/MessageStream.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/MessageStream.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/RecallTester.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/RecallTester.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/SessionList.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/SessionList.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/UploadDropzone.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/components/business/UploadDropzone.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/composables/useBackendHealth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/composables/useBackendHealth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/composables/useChatStream.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/composables/useChatStream.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/composables/useRetrieval.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/composables/useRetrieval.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/composables/useUploadQueue.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/composables/useUploadQueue.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/constants/app.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/constants/app.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/constants/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/constants/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/constants/chat.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/constants/chat.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/constants/knowledge.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/constants/knowledge.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/router/guards.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/router/guards.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/router/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/router/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/stores/chat.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/stores/chat.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/stores/knowledge.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/stores/knowledge.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/styles/modules.css" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/styles/modules.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/styles/primitives.css" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/styles/primitives.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/types/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/types/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/types/chat.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/types/chat.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/types/env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/types/env.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/types/knowledge.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/types/knowledge.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/utils/fileType.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/utils/fileType.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/utils/richtext.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/views/ChatView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/views/ChatView.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/views/HomeView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/views/HomeView.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/views/KnowledgeView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/views/KnowledgeView.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../personal-workspace-web/src/views/LoginView.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../personal-workspace-web/src/views/LoginView.vue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/personal_workspace_app/core/model_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/personal_workspace_app/core/model_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/gemini_model_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/gemini_model_test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
