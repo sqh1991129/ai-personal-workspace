@@ -1,29 +1,18 @@
-import { computed, watch } from 'vue'
-import { useKnowledgeStore } from '@/stores/knowledge'
+import { API_BASE_URL } from '@/api/http'
+import { KB_PATH } from '@/api/knowledge'
 import { useToastStore } from '@/stores/toast'
 
 /**
- * 上传队列的编排：入队与阶段推进交给 store（离开页面仍继续索引），
- * 完成提示留在这里——toast 属于视图层副作用，watcher 随作用域销毁自动解绑。
+ * 上传入口。后端还没有上传端点，所以这里只点名待对接的接口，
+ * 不再演「上传 → 解析 → 分片 → 向量化 → 已索引」的本地假进度（issue R21）：
+ * 进度、耗时和「已完成索引」的提示全是编的，只会让人以为后台已经接好了。
  */
 export function useUploadQueue() {
-  const knowledgeStore = useKnowledgeStore()
   const toastStore = useToastStore()
 
-  const hasTasks = computed<boolean>(() => knowledgeStore.uploadTasks.length > 0)
-
-  watch(
-    () => knowledgeStore.lastIndexedFile,
-    (fileName) => {
-      if (fileName) {
-        toastStore.notify(`${fileName} 已完成索引，可被对话引用`)
-      }
-    }
-  )
-
   function enqueue(fileName: string): void {
-    knowledgeStore.simulateUpload(fileName)
+    toastStore.notify(`「${fileName}」未上传：待后端实现 POST ${API_BASE_URL}${KB_PATH}/{kbId}/documents`)
   }
 
-  return { hasTasks, enqueue }
+  return { enqueue }
 }

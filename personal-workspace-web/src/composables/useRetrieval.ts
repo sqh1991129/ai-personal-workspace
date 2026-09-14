@@ -1,7 +1,6 @@
 import { computed, onScopeDispose, shallowRef } from 'vue'
 import { isApiError } from '@/api/http'
 import { retrieve } from '@/api/knowledge'
-import { DEFAULT_RECALL_QUERY } from '@/constants/knowledge'
 import { useChatStore } from '@/stores/chat'
 import { useKnowledgeStore } from '@/stores/knowledge'
 import type { RecallResult } from '@/types/knowledge'
@@ -14,7 +13,9 @@ export function useRetrieval() {
   const knowledgeStore = useKnowledgeStore()
   const chatStore = useChatStore()
 
-  const query = shallowRef(DEFAULT_RECALL_QUERY)
+  const query = shallowRef('')
+  const hybrid = shallowRef(true)
+  const rerank = shallowRef(true)
   const result = shallowRef<RecallResult | null>(null)
   const pending = shallowRef(false)
   const errorMessage = shallowRef('')
@@ -30,12 +31,20 @@ export function useRetrieval() {
   })
 
   const hasResult = computed<boolean>(() => result.value !== null)
+  // 只拼后端真给回来的字段：没有向量模型名 / 没有耗时就整段省略，不用 0 或假名字占位
   const summary = computed<string>(() => {
     const current = result.value
     if (!current) {
       return ''
     }
-    return `检索语句：${current.query} · 向量模型 ${current.embeddingModel} · Top-K ${topK.value} · 阈值 ${scoreThreshold.value.toFixed(2)} · 耗时 ${current.elapsedMs}ms`
+    const parts = [`检索语句：${current.query}`, `Top-K ${topK.value}`, `阈值 ${scoreThreshold.value.toFixed(2)}`]
+    if (current.embeddingModel) {
+      parts.splice(1, 0, `向量模型 ${current.embeddingModel}`)
+    }
+    if (current.elapsedMs > 0) {
+      parts.push(`耗时 ${current.elapsedMs}ms`)
+    }
+    return parts.join(' · ')
   })
 
   async function run(): Promise<void> {
@@ -43,13 +52,24 @@ export function useRetrieval() {
     controller = new AbortController()
     pending.value = true
     errorMessage.value = ''
-    const statement = query.value.trim() || DEFAULT_RECALL_QUERY
-
+    result.value = null
+    const statement = query.value.trim()
+    if (!statement) {
+      errorMessage.value = '请先输入检索语句'
+      pending.value = false
+      return
+    }
+    const kbId = knowledgeStore.activeKbId
+    if (!kbId) {
+      errorMessage.value = '还没有选中知识库，先等后端提供 GET /api/kb 再测召回'
+      pending.value = false
+      return
+    }
     try {
       result.value = await retrieve(
-        knowledgeStore.activeKbId,
+        kbId,
         statement,
-        { topK: topK.value, scoreThreshold: scoreThreshold.value, hybrid: true, rerank: true },
+        { topK: topK.value, scoreThreshold: scoreThreshold.value, hybrid: hybrid.value, rerank: rerank.value },
         { signal: controller.signal }
       )
     } catch (error) {
@@ -71,6 +91,8 @@ export function useRetrieval() {
     query,
     topK,
     scoreThreshold,
+    hybrid,
+    rerank,
     result,
     summary,
     hasResult,

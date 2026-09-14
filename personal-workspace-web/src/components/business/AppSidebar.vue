@@ -69,7 +69,7 @@ function isActive(name: RouteRecordName): boolean {
     </nav>
     <div class="sidebar__foot">
       <UserMenu />
-      <p class="text-xs muted">会话与偏好只保存在本浏览器；后端未就绪时走本地假数据。</p>
+      <p class="text-xs muted">会话与偏好只保存在本浏览器；后端未就绪的列表会直接点名「待对接」。</p>
     </div>
   </aside>
 </template>

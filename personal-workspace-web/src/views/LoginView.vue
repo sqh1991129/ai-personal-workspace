@@ -20,6 +20,9 @@ const mockUsername = computed<string>(() => (IS_MOCK_AUTH ? MOCK_CREDENTIALS.use
 const mockPassword = computed<string>(() => (IS_MOCK_AUTH ? MOCK_CREDENTIALS.password : ''))
 const isReturning = computed<boolean>(() => redirectTarget.value !== DEFAULT_REDIRECT_PATH)
 
+/** 只有 mock 模式才存在「admin / admin」这套凭据，真接口模式下写死 admin 会误导用户。 */
+const usernamePlaceholder = computed<string>(() => (IS_MOCK_AUTH ? MOCK_CREDENTIALS.username : '请输入用户名'))
+
 function onFormSubmit(payload: LoginPayload): void {
   void submit(payload)
 }
@@ -50,6 +53,7 @@ function onFormSubmit(payload: LoginPayload): void {
         <LoginForm
           :pending="isPending"
           :error-message="errorMessage"
+          :username-placeholder="usernamePlaceholder"
           :mock-username="mockUsername"
           :mock-password="mockPassword"
           @submit="onFormSubmit"

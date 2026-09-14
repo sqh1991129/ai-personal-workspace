@@ -6,6 +6,8 @@ from personal_workspace_app.response.user_login_res import UserLoginRes
 from personal_workspace_app.core.exceptions import AppException
 from personal_workspace_app.core.JWT import create_access_token
 from personal_workspace_app.domain.currentUser import CurrentUser
+from personal_workspace_app.core.error_codes import ErrorCodes
+from loguru import logger
 
 
 # 用户服务
@@ -18,10 +20,12 @@ class UserService:
         stmt = select(User).where(User.email == req.userId)
         result = await self.db.execute(stmt)
         user = result.scalar_one_or_none()
+        logger.info(f"user: {user}")
         if not user:
-            raise AppException(code=40001, message="用户名或密码错误")
+            logger.error("用户名或密码错误", exc_info=True)
+            raise AppException(ErrorCodes.USER_PASSWORD_ERROR)
         # 生成token
-        currentUser = CurrentUser(user_id=str(user.userId), user_name=user.username, user_email=user.email)
+        currentUser = CurrentUser(user_id=str(user.id), user_name=user.username, user_email=user.email)
         token = create_access_token(data=currentUser.__dict__)
 
-        return UserLoginRes(userId=user.userId, token=token)
+        return UserLoginRes(userId=user.id, token=token)

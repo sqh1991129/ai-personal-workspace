@@ -8,7 +8,8 @@ from personal_workspace_app.core.exception_handler import register_exception_han
 from personal_workspace_app.core.trace_middleware import TraceAndLogMiddleware
 from loguru import logger
 from personal_workspace_app.core.logger import setup_logger
-
+from personal_workspace_app.api.chat_router import api_v1_chat_router
+from personal_workspace_app.api.kb_router import api_v1_kb_router
 
 
 def create_app() -> FastAPI:
@@ -16,6 +17,11 @@ def create_app() -> FastAPI:
     setup_logger(log_level="INFO")
     app = FastAPI(title=settings.PROJECT_NAME)
     app.include_router(api_v1_user_router, prefix=settings.API_V1_STR)
+    # 聊天路由
+    app.include_router(api_v1_chat_router, prefix=settings.API_V1_STR)
+    # 知识库路由
+    app.include_router(api_v1_kb_router, prefix=settings.API_V1_STR)
+
     # 注册统一异常处理器
     register_exception_handler(app)
     # 注册日志组件
@@ -28,4 +34,4 @@ app = create_app()
 
 if __name__ == "__main__":
     # 支持通过 python -m web_app 或 poetry run python -m web_app 运行
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False, loop="asyncio")

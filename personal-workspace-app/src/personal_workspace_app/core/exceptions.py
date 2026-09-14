@@ -1,5 +1,6 @@
 # 异常类定义
 from typing import Optional, Any
+from personal_workspace_app.core.error_codes import ErrorCodes
 
 
 class BusinessException(Exception):
@@ -13,11 +14,11 @@ class BusinessException(Exception):
 
 # 可根据需要派生具体的子类（方便业务代码直接 raise）
 class AppException(BusinessException):
-    def __init__(self, message: str = None):
-        super().__init__(self.code, message)
+    def __init__(self, error_code: ErrorCodes):
+        super().__init__(error_code.code, error_code.message)
 
 
 # 可根据需要派生具体的子类（方便业务代码直接 raise）
 class VerificationException(BusinessException):
-    def __init__(self, message: str = None):
-        super().__init__(code=4001, message=message)
+    def __init__(self, error_code: ErrorCodes):
+        super().__init__(code=4001, message=error_code.message)

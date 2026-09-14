@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { applyAuthGuards } from '@/router/guards'
+import { applyAuthGuards, applyUnauthorizedRedirect } from '@/router/guards'
 import { routes } from '@/router/routes'
 
 const router = createRouter({
@@ -8,6 +8,8 @@ const router = createRouter({
 })
 
 applyAuthGuards(router)
+// 进入路由时靠 beforeEach，停留期间 token 被服务端拒掉靠 401 上报，两者共同保证「没有登录态就回到登录页」
+applyUnauthorizedRedirect(router)
 
 const appTitle = process.env.VUE_APP_TITLE || '个人 AI 工作台'
 

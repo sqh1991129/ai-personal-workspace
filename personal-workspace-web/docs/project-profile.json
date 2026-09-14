@@ -1,8 +1,8 @@
 {
   "profile": "personal-workspace-web/project-profile",
-  "profileVersion": 6,
-  "updatedAt": "2026-09-03",
-  "phase": "P1-done+P2/P3-mocked",
+  "profileVersion": 15,
+  "updatedAt": "2026-09-07",
+  "phase": "P1-done+P2-real/P3-await-backend",
   "humanAnalysis": "docs/PROJECT_ANALYSIS.md",
   "agentInstructions": "AGENTS.md",
   "meta": {
@@ -77,11 +77,36 @@
       "routeMetaKeys": ["title", "requiresAuth", "layout", "viewPath", "module", "padded"],
       "navigationGuards": ["auth"],
       "routes": [
-        { "path": "/login", "name": "login", "layout": "blank" },
-        { "path": "/", "name": "home", "requiresAuth": true, "module": "home", "padded": true },
-        { "path": "/chat", "name": "chat", "requiresAuth": true, "module": "chat" },
-        { "path": "/knowledge", "name": "knowledge", "requiresAuth": true, "module": "knowledge" },
-        { "path": "/:pathMatch(.*)*", "name": "not-found", "requiresAuth": true, "padded": true }
+        {
+          "path": "/login",
+          "name": "login",
+          "layout": "blank"
+        },
+        {
+          "path": "/",
+          "name": "home",
+          "requiresAuth": true,
+          "module": "home",
+          "padded": true
+        },
+        {
+          "path": "/chat",
+          "name": "chat",
+          "requiresAuth": true,
+          "module": "chat"
+        },
+        {
+          "path": "/knowledge",
+          "name": "knowledge",
+          "requiresAuth": true,
+          "module": "knowledge"
+        },
+        {
+          "path": "/:pathMatch(.*)*",
+          "name": "not-found",
+          "requiresAuth": true,
+          "padded": true
+        }
       ]
     },
     "state": {
@@ -105,19 +130,21 @@
       "store": "src/stores/auth.ts",
       "composables": ["src/composables/useLogin.ts", "src/composables/useLogout.ts"],
       "guard": "router.beforeEach + meta.requiresAuth；未登录跳 /login?redirect=<fullPath>",
+      "unauthorized": "guards.applyUnauthorizedRedirect(router) 接住请求层上报的 401：清会话 + 一条 toast + 跳 /login?redirect=<当前地址>；USER_LOGIN_PATH 的 401 视为口令错误不接管",
       "blankLayout": "meta.layout='blank' 时 App.vue 不套顶栏外壳（登录页整屏）",
       "mock": {
-        "enabledBy": "VUE_APP_MOCK_AUTH=true",
+        "enabledBy": "VUE_APP_MOCK_AUTH=true（.env.development 默认值；.env.production 为 false）",
         "credentials": "admin / admin",
         "latencyMs": 600,
         "ttlMs": 28800000,
-        "failureShape": "ApiError { status: 401, code: 'HTTP_ERROR' }，与真实后端经拦截器归一化后同形",
+        "failureShape": "ApiError { status: 100001, code: 'BUSINESS_ERROR' }，与真接口经 unwrapEnvelope 归一化后同形",
         "apiErrorCodeWidened": false
       },
       "redirectAllowList": "src/utils/redirect.ts resolveSafeRedirect()：只放行站内绝对路径，挡 //host、/\\host、绝对 URL 与 /login 自身",
       "sessionCodec": "src/utils/authSession.ts（脏数据/解析失败按无会话处理）",
       "expiry": "守卫里 pruneExpiredSession()；不在 getter 内判过期（computed 会缓存 Date.now()）",
-      "realBackendPending": "后端 /auth/login 与 /auth/logout 未实现（R10），切换只改 env"
+      "realBackendImplemented": "前端真接口链路已完成：POST {VUE_APP_API_BASE}/v1/users/userLogin + BaseResponse 拆信封 + JWT exp + 401 自动回登录页；后端鉴权缺陷见 R20，修好后只改 env",
+      "logoutEndpoint": "文档未提供，logout() 只清本地会话（见 R20）"
     },
     "http": {
       "module": "src/api/http.ts",
@@ -148,7 +175,7 @@
         }
       ],
       "env": ["node", "browser", "es2021", "vue/setup-compiler-macros"],
-      "customRules": {},
+      "customRules": {  },
       "prettier": false,
       "typeAwareRules": false,
       "notes": [
@@ -159,20 +186,21 @@
       ]
     },
     "chat": {
-      "api": "src/api/chat.ts（fetchSessions/fetchMessages/streamCompletion/deleteSession）",
+      "api": "src/api/chat.ts（streamCompletion → POST /api/v1/chat/streamChat + readChatStreamFrame 帧解析；fetchSessions/fetchMessages/deleteSession 直发后端，路由未提供时点名 404）",
       "store": "src/stores/chat.ts",
       "composable": "src/composables/useChatStream.ts（AbortController + onScopeDispose）",
-      "streamContract": "事件回调 onThink/onBlock/onAppendText/onCitations/onUsage；mock 逐段吐字，真实分支解析 SSE 帧，顺序一致",
-      "states": ["streaming（发送键变红色方块 + 尾部光标）", "stopped（保留部分内容并标注 tokens）", "failed（danger 描边 + 重试）"],
-      "mockData": "src/constants/chat.ts（7 个会话、5 条种子消息、draftFor(question) 两类草稿）",
+      "streamContract": "事件回调 onThink/onBlock/onAppendText/onCitations/onUsage，由 SSE 帧逐帧驱动；onThink/onCitations 目前无生产者，只为契约补齐保留",
+      "states": ["streaming（发送键变红色方块 + 尾部光标）", "stopped（保留部分内容并标注本地字符数）", "failed（danger 描边 + 重试）"],
       "richTextInput": "结构化 MessageBlock + src/utils/richtext.ts，渲染不使用 v-html"
     },
     "knowledge": {
       "api": "src/api/knowledge.ts（fetchKbSummaries/fetchDocuments/fetchChunks/retrieve/reindexDocument/removeDocument）",
       "store": "src/stores/knowledge.ts",
-      "composables": ["src/composables/useRetrieval.ts（召回调参与取消）", "src/composables/useUploadQueue.ts（完成提示）"],
-      "stateMachine": "pending → parsing → chunking → embedding → ready；任一环节失败 → failed",
-      "mockData": "src/constants/knowledge.ts（4 库/15 篇/分片预览/召回命中）",
+      "composables": [
+        "src/composables/useRetrieval.ts（召回调参与取消）",
+        "src/composables/useUploadQueue.ts（只做文件选择 + 点名待对接端点）"
+      ],
+      "stateMachine": "pending → parsing → chunking → embedding → ready；任一环节失败 → failed（状态由后端字段派生，工程内不再有队列模拟）",
       "citationDeepLink": "/chat 点击引用 → /knowledge?doc=<名> → 自动打开分片抽屉"
     },
     "icons": {
@@ -181,8 +209,9 @@
       "externalIconLibrary": false
     },
     "mockSwitch": {
-      "VUE_APP_MOCK_AUTH": "登录（src/api/auth.ts）",
-      "VUE_APP_MOCK_API": "对话与知识库（src/api/chat.ts、src/api/knowledge.ts），与鉴权分开以便逐域切真"
+      "VUE_APP_MOCK_AUTH": "登录（src/api/auth.ts）；开发 true（admin/admin）、生产 false。业务数据已无开关",
+      "removed": "VUE_APP_MOCK_API / IS_MOCK_CHAT / IS_MOCK_KNOWLEDGE 已于 2026-09-07 全量删除（PROJECT_ANALYSIS 第 22 节）",
+      "backendContractRegistry": "src/constants/backendApi.ts（15 条）+ 总览页 components/business/BackendContractCard.vue；npm run verify 断言与 src/api/* 路径常量一致"
     },
     "envVars": [
       "VUE_APP_TITLE",
@@ -190,8 +219,7 @@
       "VUE_APP_API_TIMEOUT",
       "VUE_APP_DEV_PORT",
       "VUE_APP_API_PROXY_TARGET",
-      "VUE_APP_MOCK_AUTH",
-      "VUE_APP_MOCK_API"
+      "VUE_APP_MOCK_AUTH"
     ]
   },
   "absent": [
@@ -210,7 +238,8 @@
     "serve": "vue-cli-service serve",
     "build": "npm run type-check && vue-cli-service build",
     "lint": "vue-cli-service lint \"src/**/*.{ts,js,jsx,vue}\" \"*.js\"",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "verify": "bash scripts/verify/run.sh"
   },
   "config": {
     "vue.config.js": {
@@ -229,7 +258,7 @@
       ],
       "devServer": {
         "port": "<VUE_APP_DEV_PORT|8080>",
-        "proxy": { "/api": { "target": "<VUE_APP_API_PROXY_TARGET>", "changeOrigin": true } }
+        "proxy": { "/api": {"target": "<VUE_APP_API_PROXY_TARGET>", "changeOrigin": true} }
       }
     },
     "tsconfig.json": {
@@ -253,8 +282,7 @@
       "VUE_APP_API_TIMEOUT": "15000",
       "VUE_APP_DEV_PORT": "8080 (development only)",
       "VUE_APP_API_PROXY_TARGET": "http://127.0.0.1:8000 (development only)",
-      "VUE_APP_MOCK_AUTH": "false (development 与 production，已对接真实后端) / 需要 admin-admin 演示时临时置 true",
-      "VUE_APP_MOCK_API": "true (development 与 production 演示默认) / 后端就绪后置 false"
+      "VUE_APP_MOCK_AUTH": "true (development，后端登录待修 R20) / false (production 走真实后端)；业务数据已无 mock 开关"
     },
     "alias": { "@": "src" },
     "browserslist": ["> 1%", "last 2 versions", "not dead", "not ie 11"],
@@ -293,10 +321,10 @@
         "src/components/base/AppDrawer.vue",
         "src/components/base/AppIcon.vue",
         "src/components/base/InlineText.vue",
-        "src/components/base/StatCard.vue",
         "src/components/base/StatusPill.vue",
         "src/components/base/TextField.vue",
         "src/components/business/AppSidebar.vue",
+        "src/components/business/BackendContractCard.vue",
         "src/components/business/AppTopbar.vue",
         "src/components/business/ChatComposer.vue",
         "src/components/business/ChatParamsPanel.vue",
@@ -321,6 +349,7 @@
         "src/composables/useUploadQueue.ts",
         "src/constants/app.ts",
         "src/constants/auth.ts",
+        "src/constants/backendApi.ts",
         "src/constants/chat.ts",
         "src/constants/icons.ts",
         "src/constants/knowledge.ts",
@@ -370,7 +399,26 @@
       "notYetCreated": [],
       "languageMix": { "typescript": 34, "vueSfc": 28, "css": 3, "javascript": 0 }
     },
-    "sibling": [{ "path": "personal-workspace-app/index.py", "state": "empty-file", "note": "后端占位，接口契约仍未定义" }],
+    "scripts": {
+      "note": "零依赖一次性核对脚本（不是测试框架，见 issue R18）。不在 tsconfig.include 与 ESLint glob 内，正确性由 npm run verify 保证",
+      "files": [
+        "scripts/verify/run.sh",
+        "scripts/verify/register.mjs",
+        "scripts/verify/loaders.mjs",
+        "scripts/verify/dom-shim.mjs",
+        "scripts/verify/assert.mjs",
+        "scripts/verify/api-contract.ts",
+        "scripts/verify/router-guard.ts",
+        "scripts/verify/ssr-render.ts"
+      ]
+    },
+    "sibling": [
+      {
+        "path": "personal-workspace-app/index.py",
+        "state": "obsolete",
+        "note": "后端已改为 src/personal_workspace_app 包结构，users 域契约见 docs/默认模块.md"
+      }
+    ],
     "demo": {
       "purpose": "零依赖静态 HTML 原型：对话模块 + 知识库模块，供后续 Vue 开发对照落地",
       "files": [
@@ -401,15 +449,27 @@
     ],
     "buildTimeMs": 10379,
     "artifacts": [
-      { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 197.16, "gzipKiB": 70.4 },
-      { "file": "dist/js/index.*.js", "sizeKiB": 11.6, "gzipKiB": 5.35 },
+      {
+        "file": "dist/js/chunk-vendors.*.js",
+        "sizeKiB": 197.16,
+        "gzipKiB": 70.4
+      },
+      {
+        "file": "dist/js/index.*.js",
+        "sizeKiB": 11.6,
+        "gzipKiB": 5.35
+      },
       {
         "file": "dist/js/461.*.js",
         "sizeKiB": 0.72,
         "gzipKiB": 0.49,
         "note": "NotFoundView 懒加载 chunk"
       },
-      { "file": "dist/css/index.*.css", "sizeKiB": 3.96, "gzipKiB": 1.23 }
+      {
+        "file": "dist/css/index.*.css",
+        "sizeKiB": 3.96,
+        "gzipKiB": 1.23
+      }
     ],
     "verifiedAt": "2026-09-03",
     "authLanding": {
@@ -419,8 +479,16 @@
       "buildTimeMs": 8827,
       "chunkIdNote": "webpack 数字 chunk id 每次构建可能变化，此处 952 为最后一次构建值",
       "artifacts": [
-        { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 203.66, "gzipKiB": 72.64 },
-        { "file": "dist/js/index.*.js", "sizeKiB": 16.88, "gzipKiB": 7.19 },
+        {
+          "file": "dist/js/chunk-vendors.*.js",
+          "sizeKiB": 203.66,
+          "gzipKiB": 72.64
+        },
+        {
+          "file": "dist/js/index.*.js",
+          "sizeKiB": 16.88,
+          "gzipKiB": 7.19
+        },
         {
           "file": "dist/js/952.*.js",
           "sizeKiB": 9.43,
@@ -433,8 +501,17 @@
           "gzipKiB": 0.49,
           "note": "NotFoundView 懒加载 chunk"
         },
-        { "file": "dist/css/952.*.css", "sizeKiB": 6.57, "gzipKiB": 1.33, "note": "LoginView 样式" },
-        { "file": "dist/css/index.*.css", "sizeKiB": 6.42, "gzipKiB": 1.84 }
+        {
+          "file": "dist/css/952.*.css",
+          "sizeKiB": 6.57,
+          "gzipKiB": 1.33,
+          "note": "LoginView 样式"
+        },
+        {
+          "file": "dist/css/index.*.css",
+          "sizeKiB": 6.42,
+          "gzipKiB": 1.84
+        }
       ],
       "logicAssertions": {
         "count": 41,
@@ -466,8 +543,16 @@
       "buildWarnings": 0,
       "buildTimeMs": 9876,
       "artifacts": [
-        { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 207.76, "gzipKiB": 74.07 },
-        { "file": "dist/js/index.*.js", "sizeKiB": 55.66, "gzipKiB": 21.08 },
+        {
+          "file": "dist/js/chunk-vendors.*.js",
+          "sizeKiB": 207.76,
+          "gzipKiB": 74.07
+        },
+        {
+          "file": "dist/js/index.*.js",
+          "sizeKiB": 55.66,
+          "gzipKiB": 21.08
+        },
         {
           "file": "dist/js/runtime.*.js",
           "sizeKiB": 5.26,
@@ -521,9 +606,23 @@
       "buildWarnings": 0,
       "buildTimeMs": 10783,
       "artifacts": [
-        { "file": "dist/js/chunk-vendors.*.js", "sizeKiB": 207.76, "gzipKiB": 74.07 },
-        { "file": "dist/js/index.*.js", "sizeKiB": 56.37, "gzipKiB": 21.33, "note": "信封工具进入口 chunk，+0.71 KiB" },
-        { "file": "dist/js/917.*.js", "sizeKiB": 17.22, "gzipKiB": 4.87, "note": "LoginView 懒加载 chunk" }
+        {
+          "file": "dist/js/chunk-vendors.*.js",
+          "sizeKiB": 207.76,
+          "gzipKiB": 74.07
+        },
+        {
+          "file": "dist/js/index.*.js",
+          "sizeKiB": 56.37,
+          "gzipKiB": 21.33,
+          "note": "信封工具进入口 chunk，+0.71 KiB"
+        },
+        {
+          "file": "dist/js/917.*.js",
+          "sizeKiB": 17.22,
+          "gzipKiB": 4.87,
+          "note": "LoginView 懒加载 chunk"
+        }
       ],
       "assertions": {
         "count": 185,
@@ -533,13 +632,216 @@
         "committed": false
       },
       "endpointsWired": [
-        { "method": "POST", "path": "/api/v1/users/userLogin", "request": "UserLoginReq{userId,password}", "response": "BaseResponse<UserLoginRes{userId}>；业务码 40001 与校验码 40000 也以 HTTP 200 + 信封返回" },
-        { "method": "GET", "path": "/api/v1/users/health", "request": "-", "response": "{status,message}（裸对象，不套 BaseResponse）" }
+        {
+          "method": "POST",
+          "path": "/api/v1/users/userLogin",
+          "request": "UserLoginReq{userId,password}",
+          "response": "BaseResponse<UserLoginRes{userId}>；业务码 40001 与校验码 40000 也以 HTTP 200 + 信封返回"
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users/health",
+          "request": "-",
+          "response": "{status,message}（裸对象，不套 BaseResponse）"
+        }
       ],
       "liveProbeBlocked": "沙箱禁止监听端口且审批通道故障，未能对 127.0.0.1:8000 发真实请求；契约正确性由假 adapter 断言覆盖",
       "visualChecked": false
     },
-    "pages": ["/login", "/", "/chat", "/knowledge"]
+    "apiRefresh": {
+      "verifiedAt": "2026-09-04",
+      "specSource": "docs/默认模块.md（2026-09-04 更新版）",
+      "breakingChanges": [
+        "成功码由 code=200 改为 code=0（ErrorCodes.SUCCESS），message 改为「成功」",
+        "UserLoginRes 新增必填 token（后端签发 HS256 JWT），前端不再用本地占位 token"
+      ],
+      "lintPassed": true,
+      "typeCheckPassed": true,
+      "buildPassed": true,
+      "buildWarnings": 0,
+      "buildTimeMs": 20954,
+      "artifacts": [
+        {
+          "file": "dist/js/chunk-vendors.*.js",
+          "sizeKiB": 207.41,
+          "gzipKiB": 74.0
+        },
+        {
+          "file": "dist/js/index.*.js",
+          "sizeKiB": 56.93,
+          "gzipKiB": 20.94,
+          "note": "streamChat 帧解析 + 演示模式角标/横幅进入口 chunk（2026-09-07 实测）"
+        },
+        {
+          "file": "dist/css/index.*.css",
+          "sizeKiB": 32.02,
+          "gzipKiB": 6.1,
+          "note": "新增 .rail__mock 演示数据横幅（只引用令牌变量）"
+        }
+      ],
+      "assertions": {
+        "rounds": 7,
+        "realMode": {
+          "接口契约（假数据）": 64,
+          "路由与守卫": 42,
+          "SSR 渲染（假数据）": 59,
+          "接口契约（真流式 streamChat）": 83,
+          "total": 248
+        },
+        "mockMode": { "接口契约": 21, "SSR 渲染（假数据）": 59, "SSR 渲染（真实数据模式）": 63, "total": 143 },
+        "executed": 391,
+        "passed": 391,
+        "committed": true,
+        "harness": "scripts/verify（npm run verify），零新依赖；第 4 轮唯一跑 VUE_APP_MOCK_API=false 的契约轮，streamWithBackend() 只在它里面执行"
+      },
+      "sessionSemantics": {
+        "token": "服务端 JWT 原样使用",
+        "expiresAt": "读 JWT 的 exp（不验签）；解不出则 null 表示本地不判过期",
+        "missingToken": "抛 ApiError(code=UNKNOWN, message=登录响应缺少 token)，不留假登录态",
+        "mockFailureShape": "与真接口同形：BUSINESS_ERROR + status 100001",
+        "jwtPayloadEncoding": "PyJWT 用 ensure_ascii=False，解 exp 前需把 atob 得到的 latin-1 还原为 UTF-8",
+        "usernamePlaceholder": "由 LoginView 按 IS_MOCK_AUTH 下发，真接口模式不再写死 admin",
+        "unauthorized401": "请求层 setUnauthorizedHandler 上报 → guards.applyUnauthorizedRedirect 清会话 + 跳 /login?redirect=；登录端点的 401 例外（交给表单提示）"
+      },
+      "liveProbeBlocked": "沙箱禁止监听端口且审批通道故障，未能对 127.0.0.1:8000 发真实请求",
+      "visualChecked": false,
+      "chatStreamAlignment": {
+        "endpoint": "POST /api/v1/chat/streamChat（src/api/chat.ts → streamCompletion）",
+        "request": "{ text }，只有这一个字段（后端 request/simple_chat_req.py）",
+        "frames": "data: {\"code\":200,\"message\":\"success\",\"data\":<chunk>,\"status\":\"streaming\"}；结束帧 data:null + status:finished",
+        "successCode": "帧内 code=200，与全局 API_SUCCESS_CODE=0 无关，不经 unwrapEnvelope()",
+        "parser": "readChatStreamFrame() 纯函数：append / finish / error / ignore 四态，对象 data 依次取 resText|content|text|answer|delta，都没有就 JSON.stringify",
+        "notProvidedByBackend": ["思考过程", "引用来源", "token 用量", "模型标识", "上下文窗口", "多轮上下文", "知识库检索参数"],
+        "uiTruthfulness": "（已被 2026-09-07 mock 全删取代）当时是隐藏与禁用；现在是模型下拉、上下文占用条、输入区四个开关整体删除，见 verified.mockRemoval",
+        "auth": "fetch 通道经 http.authHeaders() 带同一份 Bearer token，401 经 notifyUnauthorized() 复用会话失效装配",
+        "stillMissing": [
+          "GET /api/v1/chat/sessions",
+          "GET /api/v1/chat/{id}/messages",
+          "DELETE /api/v1/chat/{id}",
+          "POST /api/v1/chat/simpleChat（后端已有，前端未接）"
+        ],
+        "registry": { "total": 15, "pending": 12, "connected": 1, "blocked": 2 },
+        "termination": "缺 finished 帧就断开 = 失败（HTTP_ERROR，提示回答可能不完整）；fetch 的 AbortError 归一化为 ApiError(code=CANCELED)，「停止生成」不算失败"
+      },
+      "noMockFallbackInRealMode": "真接口分支不回退假数据：normalizeSessionList 非数组抛 UNKNOWN；removeSession / removeDoc / reindex 失败保留本地状态并报错；后端未提供的数字（token 数、模型名、索引指标）界面留空",
+      "demoModeBadge": {
+        "status": "superseded",
+        "note": "「演示数据」角标与 .rail__mock 横幅已随 mock 数据层一起删除，只剩顶栏「演示登录」角标；见 verified.mockRemoval 与 PROJECT_ANALYSIS 第 22 节"
+      }
+    },
+    "pages": ["/login", "/", "/chat", "/knowledge"],
+    "mockRemoval": {
+      "verifiedAt": "2026-09-07",
+      "trigger": "用户第三次反馈（截图：空会话区仍挂着「模型 WS-14B（本地）· 默认带上「架构决策库」」与四张示例卡），要求「去除 mock 数据」",
+      "decision": "推翻第 19 节「假数据留在开关后面」的方案：连代码一起删，工程内不再有业务假数据分支",
+      "lintPassed": true,
+      "typeCheckPassed": true,
+      "buildPassed": true,
+      "buildWarnings": 0,
+      "buildTimeMs": 11513,
+      "artifacts": [
+        {
+          "file": "dist/js/chunk-vendors.*.js",
+          "sizeKiB": 207.41,
+          "gzipKiB": 74.0
+        },
+        {
+          "file": "dist/js/index.*.js",
+          "sizeKiB": 48.47,
+          "gzipKiB": 17.25,
+          "note": "删掉 mock 常量与假流式后 -8.46 KiB（gzip -3.69）"
+        },
+        {
+          "file": "dist/js/runtime.*.js",
+          "sizeKiB": 4.79,
+          "gzipKiB": 2.1
+        },
+        {
+          "file": "dist/css/index.*.css",
+          "sizeKiB": 30.77,
+          "gzipKiB": 5.94,
+          "note": "删掉 .rail__mock / .suggestions / .uploader 后 -1.25 KiB"
+        }
+      ],
+      "assertions": {
+        "rounds": 6,
+        "breakdown": {
+          "源码扫描（无业务假数据）": 1,
+          "接口契约（真登录 + 真流式）": 83,
+          "路由与守卫": 42,
+          "SSR 渲染（真登录）": 76,
+          "接口契约（演示登录）": 40,
+          "SSR 渲染（演示登录）": 76
+        },
+        "executed": 318,
+        "passed": 318,
+        "committed": true,
+        "harness": "scripts/verify（npm run verify），零新依赖；mock 开关消失后原来的两轮 mock 轮次合并掉，391 → 318",
+        "noMockScan": "第 1 轮 grep src/** 与 scripts/verify/**，出现 VUE_APP_MOCK_API / IS_MOCK_{CHAT,KNOWLEDGE} / MOCK_SESSIONS / streamWithMock / SUGGESTIONS / INDEX_SERVICE / UPLOAD_STAGES 即失败",
+        "fixtureNote": "SSR 里需要内容的两处（对话消息流、知识库抽屉）改用脚本内联 fixture 赋值 store 状态，应用代码不再生产示例数据"
+      },
+      "removed": {
+        "switch": [
+          "VUE_APP_MOCK_API（两张 .env + src/types/env.d.ts）",
+          "IS_MOCK_API",
+          "IS_MOCK_CHAT",
+          "IS_MOCK_KNOWLEDGE"
+        ],
+        "constants": [
+          "src/constants/chat.ts 的会话/种子消息/草稿/SUGGESTIONS",
+          "src/constants/knowledge.ts 的库/文档/分片/召回命中/索引服务/上传阶段/假模型名"
+        ],
+        "api": [
+          "streamWithMock / sliceText / delay",
+          "CompletionRequest（连带 deepThink）",
+          "knowledge 的 chunkLatency / RETRIEVAL_LATENCY_MS 与全部 mock 分支"
+        ],
+        "stores": [
+          "chat: params.modelId / reranker / 默认勾选的 selectedKbIds / contextUsage getter / setModel",
+          "knowledge: simulateUpload / advanceUpload / finishUpload / uploadTasks / addedDocuments / lastIndexedFile / 本地 createLibrary / 默认假库 activeKbId"
+        ],
+        "ui": [
+          "ChatComposer 附件/知识库/深度思考/联网四个开关",
+          "ChatParamsPanel 模型下拉与上下文占用段",
+          "MessageStream 空会话四张示例卡与 modelLabel/上下文/知识库芯片",
+          "SessionList 与 KbList 的 mockData 横幅与索引服务假指标卡",
+          "KbList/KnowledgeView 的分片 512/64、· 1024 维、来源=本地文件、已启用检索",
+          "HomeView 的 QUICK_PROMPTS 与提问框三个无效开关",
+          "AppTopbar 的「演示数据」角标"
+        ],
+        "types": ["ChatDraft", "UploadTask", "ChatParams.modelId", "ChatParams.reranker"],
+        "styles": [".rail__mock", ".suggestions*", ".uploader*", ".chip--clickable:hover"]
+      },
+      "behaviorFixes": [
+        "reindex/removeDoc 返回布尔，失败不再改本地列表、视图不弹成功 toast；新建知识库只点名 POST /api/kb 缺口",
+        "上传改为真实 <input type=\"file\">（拖拽走 dataTransfer.files），提示里是用户自己的文件名，不再有「拖拽文件.md」",
+        "召回测试默认语句变成纯 placeholder；hybrid/rerank 原先在 useRetrieval 里写死 true，现在真的进请求体",
+        "fetchDocuments 的 type 由文件名后缀派生（新增 utils/fileType.ts 的 fileTypeOf），不再硬编 MD；embeddingModel 读后端字段否则空串"
+      ],
+      "kept": {
+        "mockAuth": "VUE_APP_MOCK_AUTH + admin/admin + 顶栏「演示登录」角标（后端 R20 未修）",
+        "callbacks": "CompletionEvents.onThink/onCitations 与 MessageItem 的 think/citations 渲染（有数据才显示）"
+      },
+      "visualChecked": false,
+      "liveProbeBlocked": "沙箱禁止监听端口且不允许起 dev server，仍未做真机目检"
+    },
+    "statCardRetention": {
+      "verifiedAt": "2026-09-07",
+      "trigger": "上一条回答建议按 R22 删除 StatCard.vue，用户要求「这个页面样式保留」",
+      "keptComponent": "src/components/base/StatCard.vue（指标卡 + 迷你折线，components/base 层，不依赖 store 与 api）",
+      "callSites": 0,
+      "restoredStyles": [".stat__value", ".stat__delta", ".stat__delta--down", ".stat__label", ".spark", ".spark polyline", ".spark polygon"],
+      "notRestored": [".mini-list", ".checklist", ".tick"],
+      "styleSource": "逐字取自 demo/assets/modules.css 第 64-108 行，插入 src/styles/modules.css 总览段 .ov__grid 之后；裸 .stat 在原型里本就没有规则，容器由 .card 负责",
+      "bugfixes": ["points 改为可选（默认 []），空数组时 <svg> 不渲染，不再画出 \" 100,34 0,34\" 的畸形多边形", "单点时 x 取 0，不再 (index*100)/(length-1) 除以 0 得到 NaN 坐标"],
+      "notRewired": "首页不重新挂这四张卡：18 / 15 / 860ms / 1.24M 后端一个都不返回，保留组件 ≠ 保留演示数据",
+      "lintPassed": true, "typeCheckPassed": true, "buildPassed": true, "buildWarnings": 0, "buildTimeMs": 10710,
+      "artifacts": [
+        { "file": "dist/js/index.*.js", "sizeKiB": 48.47, "gzipKiB": 17.25, "note": "不变（组件零引用，不进包）" },
+        { "file": "dist/css/index.*.css", "sizeKiB": 31.36, "gzipKiB": 6.06, "note": "30.77 → 31.36，回补七条规则" }
+      ],
+      "visualChecked": false
+    }
   },
   "issues": [
     {
@@ -660,16 +962,34 @@
       "status": "resolved",
       "path": "src/api/auth.ts",
       "problem": "登录仍走 mock，凭据写在前端常量里，不具备真实安全性",
-      "resolution": "2026-09-03 按 docs/默认模块.md 对接真实接口：POST {VUE_APP_API_BASE}/v1/users/userLogin，请求体 UserLoginReq{userId,password}，响应按 BaseResponse<UserLoginRes> 拆信封（code!=200 归一化为 BUSINESS_ERROR，trace_id 落到 ApiError.requestId），.env.development 默认 VUE_APP_MOCK_AUTH=false，mock 保留为演示开关",
-      "next": "服务端 token / 有效期 / 角色与登出端点补齐前，前端仍用本地占位 token 且 expiresAt=null（见 R20）"
+      "resolution": "2026-09-03 按 docs/默认模块.md 对接真实接口：POST {VUE_APP_API_BASE}/v1/users/userLogin，请求体 UserLoginReq{userId,password}，响应按 BaseResponse<UserLoginRes> 拆信封（非 0 成功码归一化为 BUSINESS_ERROR，trace_id 落到 ApiError.requestId），服务端 JWT 原样使用、expiresAt 取 JWT 的 exp。2026-09-07 因后端登录仍不可信（R20 阻断级：不校验口令），把 .env.development 的 VUE_APP_MOCK_AUTH 改回 true（admin/admin），.env.production 保持 false",
+      "next": "后端修好 R20（补口令哈希与校验、token 有效期、decode_token 签名、SECRET_KEY 入 env、登出端点与用户名/角色字段）后，把 .env.development 置 false 即切真接口，业务代码不需要改动"
     },
     {
       "id": "R20",
       "priority": "P1",
       "status": "open",
       "path": "personal-workspace-app（后端）",
-      "problem": "对接 docs/默认模块.md 时发现后端契约不足以支撑真鉴权：UserLoginRes 只有 userId，没有 token / 有效期 / 角色，也没有登出端点；UserService.user_login 把 str 型 req.userId 回填进声明为 int 的 UserLoginRes.userId，非数字登录名会在 pydantic 校验处炸成 500；接口文档把 /users/health 的返回写成 null，实现实际返回 {status,message}",
-      "next": "后端先修四处会直接导致登录 500 的实现问题：exception_handler.py 调 BaseResponse.fail 但 base_response.py 只定义了 failure；AppException.__init__ 只收 message 却被按 (code=, message=) 调用且 super().__init__ 早于 self.code 赋值；UserLoginRes(userId=user.userId) 取的是 domain/user.py 上不存在的字段；新增 core/JWT.py 不可导入（decode_token 的 except 无函数体）、timedelta(分钟) 实为天数、datetime.now(timezone) 传了模块、SECRET_KEY 硬编码。修完再签发真 token（建议 JWT + expiresIn）并补 /api/v1/users/userLogout 与用户信息字段；前端在 src/api/auth.ts 的 toSession() 里改成直接取服务端字段（去掉 createLocalToken 兜底与 logout 空实现），并修正 health 端点的 OpenAPI 响应模型"
+      "problem": "对接 docs/默认模块.md 时发现后端鉴权不可信：**User 模型根本没有 password 列，user_login 拿到 req.password 后从未校验，只要 email 存在就用任意密码签发合法 JWT**；UserLoginRes 不含角色，也没有登出端点；接口文档把 /users/health 的返回写成 null，实现实际返回 {status,message}",
+      "next": "后端 2026-09-04 已修好 BaseResponse.fail 与 AppException 签名，并开始签发 JWT。剩下的：create_access_token 默认分支的 timedelta(ACCESS_TOKEN_EXPIRE_MINUTES) 位置参数是 days，token 实际有效期 30 天而非 30 分钟；decode_token 里 AppException(code=\"1000\", message=...) 与新签名 (error_code: ErrorCodes) 不匹配且码是字符串，token 过期路径一跑就 TypeError；SECRET_KEY 硬编码在 core/JWT.py 应挪进 Settings/.env；ErrorCodes.SUCCESS 写成 000000（合法但易误读，建议 0）；VerificationException 把枚举码丢掉恒定 4001；router.py 的 user_info 没有路由装饰器且 Depends(decode_token) 签名不兼容；登录名匹配 User.email 但字段与文档都叫「用户名」，输 admin 会得 100001；文档仍列 422 HTTPValidationError 与 health 返回 null，与实现（HTTP 200 + code 40000、health 返回 {status,message}）不一致；仍缺登出端点与用户名/角色字段（前端 username/displayName 只能回显提交值，roles 恒为空数组）。另：user_login 的 str→int 回填问题已随后端改用 user.id 修好。2026-09-04 复核源码追加【阻断级】：domain/user.py 无 password 列，services/userService.py 从未校验 req.password，命中 email 即签发合法 JWT，等同任意密码可登录；接入真实数据前必须先修，并补 bcrypt/argon2 口令哈希"
+    },
+    {
+      "id": "R21",
+      "priority": "P1",
+      "status": "open",
+      "path": "src/api/chat.ts、src/api/knowledge.ts",
+      "problem": "前端为对话/知识库自定义的端点与后端不一致：曾用 /api/chat/sessions、/api/chat/completions、/api/kb/*（缺 /v1 前缀，也未写进 docs/默认模块.md），后端 2026-09-07 实际注册的是 POST /api/v1/chat/simpleChat 与 POST /api/v1/chat/streamChat；知识库与上传后端完全没有",
+      "next": "剩下列表要等有后端契约才能出数据：GET /api/v1/chat/sessions、GET /api/kb 及 /kb/* 全部（登记表 15 条 / 待对接 12）",
+      "resolution": "2026-09-07 第三次反馈后改为彻底删除：src/constants/{chat,knowledge}.ts 只剩纯 UI 常量与状态映射，src/api/{chat,knowledge}.ts 去掉全部 mock 分支，组件里删掉四个死开关、模型下拉、上下文占用条、示例卡与假指标横幅；VUE_APP_MOCK_API 开关本身一并移除，只剩登录侧 VUE_APP_MOCK_AUTH。详见 PROJECT_ANALYSIS 第 22 节"
+    },
+    {
+      "id": "R22",
+      "priority": "P3",
+      "status": "resolved",
+      "path": "src/components/base/StatCard.vue",
+      "problem": "首页假指标卡（今日对话 +12%、平均首字延迟 860ms、今日 token 1.24M）与六条写死的「今日待办」已随「页面不展示假数据」移除，StatCard.vue 一度因此无任何引用",
+      "resolution": "2026-09-07 用户要求「这个页面样式保留」，改判为保留组件并回补 .stat__value/.stat__delta/.stat__delta--down/.stat__label/.spark/.spark polyline/.spark polygon 七条规则到 src/styles/modules.css（逐字照搬 demo/assets/modules.css，色值全走令牌）；.mini-list/.checklist/.tick 不回补（它们服务的是写死的「今日待办」内容）。组件暂无调用点，等后端真实指标接口再接回首页。顺手修了 points 空数组画畸形多边形、单点除以 0 得 NaN 坐标两个缺陷，points 改为可选默认 []",
+      "next": "接真实指标时补 SSR 断言（当前 npm run verify 不渲染这个零引用组件）"
     },
     {
       "id": "R14",
@@ -694,7 +1014,7 @@
       "status": "open",
       "path": "src/**",
       "problem": "三个模块的渲染正确性只由一次性 SSR 断言覆盖，工程内没有测试框架，无法留作回归",
-      "next": "2026-09-03 用户确认暂缓，不引入测试框架。将来需要时先对齐选型（建议 vitest + @vue/test-utils），再把 153 条断言固化成用例；在此之前改视图必须重跑一次性核对脚本"
+      "next": "2026-09-03 用户确认暂缓，不引入测试框架。2026-09-04 把一次性核对脚本从 /tmp 迁进仓库 scripts/verify（npm run verify，零新依赖，仍不是测试框架），避免临时目录被清理后回归证据丢失；将来需要时再对齐选型（建议 vitest + @vue/test-utils）把这些断言固化成用例"
     },
     {
       "id": "R19",
@@ -704,6 +1024,14 @@
       "problem": "登录页左侧是标语 + 三张卖点卡（「把日常对话、资料检索和重复劳动，收进同一个工作台。」），与用户预期不符，应换成符合项目背景的图片",
       "resolution": "2026-09-03 删除标语/描述/卖点卡及其样式，新增内联 SVG 插画组件 LoginHero（会话列表→流式对话→引用→知识库召回→自动化任务），颜色全取 global.css 令牌故明暗主题自动跟随；不引入位图与依赖",
       "next": "如后续需要位图版（AI 生成或设计师交付），需同时提供明暗两版并重新核对体积；当前 SVG 方案已进懒加载 chunk（17.22 KiB / gzip 4.86 KiB）"
+    },
+    {
+      "id": "R23",
+      "priority": "P1",
+      "status": "open",
+      "path": "personal-workspace-app（后端 chat 域）",
+      "problem": "streamChat 三处缺陷：① chatStreamEndpoint 没挂鉴权依赖（simpleChat 有），任何人不登录就能刷模型；② 链路 prompt | llm | JsonOutputParser() 但模型未开 JSON 模式（response_format 被注释掉），普通中文回答大概率解析失败或输出被包成对象；③ services/ChatService.py 注释里残留硬编码 API key。另有：simpleChat 用同步 chain.invoke() 阻塞事件循环；core/CheckouToken.py 沿用 AppException(code=…, message=…) 旧签名（与 R20 里 decode_token 同一类），令牌失效路径会 TypeError；帧契约未写进 docs/默认模块.md",
+      "next": "后端侧修复并补文档：给 streamChat 加 Depends(get_current_user_info)、去掉 JsonOutputParser（或开 JSON 模式并定义 schema）、轮换并移出仓库历史的 API key、simpleChat 改 ainvoke/astream。修完前端只需把登记表 streamChat 的 backend 从 flawed 改为 implemented（界面上的「后端有缺陷」标签随之消失）"
     }
   ],
   "conventions": {
@@ -730,7 +1058,9 @@
       "受保护路由用 meta.requiresAuth 声明；需要整屏的页面用 meta.layout='blank'",
       "会话事实源只有 stores/auth.ts；token 由它单点同步给 api/http.ts 的 setAuthToken()",
       "用户可控的跳转目标必须过 utils/redirect.ts 的白名单，禁止直接 router.push(query.redirect)",
-      "新增依赖需同步 docs/PROJECT_ANALYSIS.md 与本档案"
+      "新增依赖需同步 docs/PROJECT_ANALYSIS.md 与本档案",
+      "不得再引入 mock 数据层：src/** 里不允许出现没有后端来源的业务数字/文案/模型名/进度；npm run verify 第 1 轮 grep 扫描直接拦（PROJECT_ANALYSIS 22.4）",
+      "后端没有对应字段的控件直接删除，不要用 disabled 留着；演示数据只允许活在 scripts/verify/ 的 fixture 里"
     ]
   },
   "roadmap": [
@@ -768,24 +1098,29 @@
       "phase": "P2",
       "name": "主流程",
       "status": "in-progress",
-      "tasks": ["Markdown/代码块渲染接真实语法高亮", "打通 POST /api/chat/completions（SSE）"],
+      "tasks": ["Markdown/代码块渲染接真实语法高亮"],
       "delivered": [
         "SessionList / MessageStream / MessageItem / ChatComposer / ChatParamsPanel",
         "chat store 与会话分组、筛选、参数截断",
-        "引用来源 → 知识库分片抽屉的深链闭环"
+        "引用来源 → 知识库分片抽屉的深链闭环",
+        "打通 POST /api/v1/chat/streamChat（SSE，只发 { text }）与帧解析 readChatStreamFrame",
+        "删净 mock 后页面数据只有后端一条路径；npm run verify 增加源码扫描防回退"
       ]
     },
     {
       "phase": "P3",
       "name": "体验",
       "status": "in-progress",
-      "tasks": ["流式改接真实 SSE 后端", "知识库真实上传通道（当前为模拟文件名）"],
+      "tasks": [
+        "知识库上传通道等后端 POST /api/kb/{kbId}/documents",
+        "索引状态机与文档元信息等后端契约",
+        "Markdown 语法高亮（与 P2 合并做）"
+      ],
       "delivered": [
-        "假流式（逐段吐字 + 可中断 + 失败重试三态）",
         "知识库列表/文档表格/状态筛选/关键词搜索",
-        "上传 → 解析 → 分片 → 向量化 → 已索引 队列模拟",
         "分片详情抽屉（Esc 关闭、Teleport 到 body）",
-        "召回测试面板（Top-K / 阈值 / 混合检索 / 重排）"
+        "召回测试面板（Top-K / 阈值 / 混合检索 / 重排，参数真的进请求体）",
+        "mock 数据层全量删除：假流式、假上传进度、假索引指标、示例会话与提示卡、假模型名与假用量全部移除（PROJECT_ANALYSIS 第 22 节）"
       ]
     },
     {

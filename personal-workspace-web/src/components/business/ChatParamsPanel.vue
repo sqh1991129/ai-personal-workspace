@@ -1,16 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppIcon from '@/components/base/AppIcon.vue'
-import { DEFAULT_RERANKER, LIBRARY_REPRESENTATIVE_TYPE } from '@/constants/knowledge'
 import { useAppStore } from '@/stores/app'
 import { useChatStore } from '@/stores/chat'
 import { useKnowledgeStore } from '@/stores/knowledge'
-import type { FileType, KbSummary } from '@/types/knowledge'
-import { fileTypeClass } from '@/utils/fileType'
-
-function representativeType(kbId: string): FileType {
-  return LIBRARY_REPRESENTATIVE_TYPE[kbId] ?? 'MD'
-}
+import type { KbSummary } from '@/types/knowledge'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -18,14 +12,7 @@ const chatStore = useChatStore()
 const knowledgeStore = useKnowledgeStore()
 const appStore = useAppStore()
 
-const MODEL_OPTIONS = [
-  'WS-14B · 本地 GGUF（Q4_K_M）',
-  'WS-7B · 本地（更快）',
-  '云端兜底 · OpenAI 兼容接口'
-]
-
 const libraries = computed<KbSummary[]>(() => knowledgeStore.libraries)
-const context = computed(() => chatStore.contextUsage)
 
 function isSelected(kbId: string): boolean {
   return chatStore.params.selectedKbIds.includes(kbId)
@@ -47,14 +34,13 @@ function collapse(): void {
       </button>
     </div>
     <div class="panel__body">
+      <p class="panel__notice">
+        后端 POST /api/v1/chat/streamChat 只接收问题文本，以下参数只保存在前端、暂不下发
+        （见总览页「后端接口对接进度」）。
+      </p>
+
       <div class="panel__section">
-        <h3><AppIcon name="bolt" size="sm" />模型</h3>
-        <label class="field">
-          <span class="field__label">推理模型</span>
-          <select class="select" :value="chatStore.params.modelId" @change="chatStore.setModel(($event.target as HTMLSelectElement).value)">
-            <option v-for="option in MODEL_OPTIONS" :key="option" :value="option">{{ option }}</option>
-          </select>
-        </label>
+        <h3><AppIcon name="bolt" size="sm" />生成参数</h3>
         <label class="field">
           <span class="field__label">温度 <span class="muted">{{ chatStore.params.temperature.toFixed(1) }}</span></span>
           <input
@@ -80,10 +66,12 @@ function collapse(): void {
             @change="chatStore.setMaxOutputTokens(Number(($event.target as HTMLInputElement).value))"
           />
         </label>
+        <p class="card__hint">推理模型由后端决定，接口不返回模型标识，前端不放下拉框。</p>
       </div>
 
       <div class="panel__section">
         <h3><AppIcon name="book" size="sm" />知识来源</h3>
+        <p v-if="libraries.length === 0" class="empty">后端尚未提供知识库列表（GET /api/kb），暂无可勾选的来源。</p>
         <button
           v-for="library in libraries"
           :key="library.id"
@@ -92,7 +80,6 @@ function collapse(): void {
           :aria-pressed="isSelected(library.id) ? 'true' : 'false'"
           @click="chatStore.toggleKnowledgeSource(library.id)"
         >
-          <span :class="fileTypeClass(representativeType(library.id))">{{ representativeType(library.id) }}</span>
           <span class="row__main">
             <span class="row__title">{{ library.name }}</span>
             <span class="row__meta">{{ library.documentCount }} 篇 · {{ library.chunkCount }} 片</span>
@@ -102,7 +89,6 @@ function collapse(): void {
         <div class="cluster">
           <span class="chip pill--no-dot pill--info">Top-K {{ chatStore.params.topK }}</span>
           <span class="chip pill--no-dot pill--info">阈值 {{ chatStore.params.scoreThreshold.toFixed(2) }}</span>
-          <span class="chip pill--no-dot">重排 {{ DEFAULT_RERANKER }}</span>
         </div>
       </div>
 
@@ -118,15 +104,11 @@ function collapse(): void {
       </div>
 
       <div class="panel__section">
-        <h3><AppIcon name="db" size="sm" />上下文占用</h3>
-        <div class="meter"><div class="meter__fill meter__fill--info" :style="{ width: context.percent + '%' }" /></div>
-        <dl class="kv">
-          <dt>系统提示词</dt><dd>{{ chatStore.params.systemPrompt.length }}</dd>
-          <dt>历史消息</dt><dd>{{ context.usedLabel }}</dd>
-          <dt>召回分片</dt><dd>{{ chatStore.params.selectedKbIds.length * 1024 }}</dd>
-          <dt>剩余窗口</dt><dd>{{ context.windowLabel }}</dd>
-        </dl>
-        <p class="card__hint">超窗时策略：按轮次截断 + 保留最近一次引用来源，触发前给出提示条。</p>
+        <h3><AppIcon name="warning" size="sm" />后端未接收的参数</h3>
+        <p class="card__hint">推理模型、温度、最大输出 token：接口没有对应字段。</p>
+        <p class="card__hint">系统提示词：后端写死在提示模板里，前端改动无效。</p>
+        <p class="card__hint">知识库引用与 Top-K 召回：后端尚未接入检索。</p>
+        <p class="card__hint">多轮上下文：每轮只发送当前这一句问题。</p>
       </div>
 
       <div class="panel__section">
@@ -136,3 +118,16 @@ function collapse(): void {
     </div>
   </aside>
 </template>
+
+<style scoped>
+.panel__notice {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2);
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-sm);
+  background: var(--color-info-soft);
+  color: var(--color-info);
+  font-size: var(--font-xs);
+  line-height: 1.5;
+}
+</style>

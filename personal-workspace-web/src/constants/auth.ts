@@ -11,7 +11,7 @@ export const HOME_ROUTE_NAME = 'home'
 /** 登录后回跳的默认落点，避免 open redirect 时没有可信目标 */
 export const DEFAULT_REDIRECT_PATH = '/'
 
-// 后端接口就绪前的演示账号；真实请求由 VUE_APP_MOCK_AUTH=false 切换（见 src/api/auth.ts）。
+// 演示账号：只在 VUE_APP_MOCK_AUTH=true 时使用（开发默认 true，生产默认 false 走真实后端，见 src/api/auth.ts）。
 export const MOCK_CREDENTIALS = {
   username: 'admin',
   password: 'admin'

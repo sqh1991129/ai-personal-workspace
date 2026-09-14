@@ -2,7 +2,6 @@
 import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue'
 import AppIcon from '@/components/base/AppIcon.vue'
 import MessageItem from '@/components/business/MessageItem.vue'
-import { SUGGESTIONS } from '@/constants/chat'
 import { useToastStore } from '@/stores/toast'
 import type { ChatCitation, ChatMessage } from '@/types/chat'
 
@@ -10,21 +9,20 @@ interface Props {
   messages: ChatMessage[]
   streaming: boolean
   loading: boolean
-  modelLabel: string
-  contextUsed: string
-  contextWindow: string
   temperature: number
-  kbCount: number
   userInitial: string
   /** 流式失败的摘要，非空时在消息流顶部提示 */
   error: string
+  /** 后端能力缺口说明，非空时常驻在消息流顶部（issue R21：页面上要看得清哪些没对接） */
+  capabilityNotice?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  capabilityNotice: ''
+})
 
 const emit = defineEmits<{
   regenerate: [message: ChatMessage]
-  useSuggestion: [prompt: string]
   openCitation: [citation: ChatCitation]
 }>()
 
@@ -36,6 +34,11 @@ const visibleMessages = computed<ChatMessage[]>(() =>
   onlyMine.value ? props.messages.filter((message) => message.role === 'user') : props.messages
 )
 const isEmpty = computed<boolean>(() => props.messages.length === 0 && !props.streaming)
+
+// 后端不回模型标识，也不能把参数说成「已生效」，所以这里只陈述接口事实，不给示例提示词
+const emptyHint =
+  '回答由后端 POST /api/v1/chat/streamChat 生成，接口不返回模型标识；' +
+  '每轮只发送问题文本，不带历史上下文、不引用知识库。草稿只存在于当前浏览器。'
 
 // 新内容与逐字追加都要跟着滚到底，nextTick 保证 DOM 已更新
 watch(
@@ -75,10 +78,9 @@ function exportSession(): void {
 <template>
   <div class="thread">
     <div class="thread__subbar">
-      <span class="pill pill--accent pill--no-dot">{{ modelLabel }}</span>
-      <span>上下文 {{ contextUsed }} / {{ contextWindow }}</span>
-      <span>温度 {{ temperature.toFixed(1) }}</span>
-      <span>知识库 {{ kbCount }} 个</span>
+      <span class="pill pill--accent pill--no-dot">后端 streamChat</span>
+      <span>温度 {{ temperature.toFixed(1) }}（本地）</span>
+      <span class="pill pill--no-dot">参数不下发后端</span>
       <span class="topbar__spacer" />
       <button
         class="btn btn--ghost btn--sm"
@@ -94,6 +96,7 @@ function exportSession(): void {
     </div>
 
     <p v-if="error" class="thread__notice" role="alert">{{ error }}</p>
+    <p v-if="capabilityNotice" class="thread__notice thread__notice--info" role="status">{{ capabilityNotice }}</p>
 
     <div ref="scroller" class="thread__scroll">
       <div class="thread__inner">
@@ -110,13 +113,7 @@ function exportSession(): void {
         <div v-if="isEmpty" class="empty-thread">
           <span class="avatar avatar--lg"><AppIcon name="spark" /></span>
           <h3>新会话，从一句话开始</h3>
-          <p class="muted text-sm">模型 {{ modelLabel.split(' ')[0] }}（本地）· 默认带上「架构决策库」。所有草稿只存在于当前浏览器。</p>
-          <div class="suggestions">
-            <button v-for="item in SUGGESTIONS" :key="item.title" type="button" @click="emit('useSuggestion', item.prompt)">
-              <strong>{{ item.title }}</strong>
-              <span>{{ item.note }}</span>
-            </button>
-          </div>
+          <p class="muted text-sm">{{ emptyHint }}</p>
         </div>
       </div>
     </div>
@@ -134,5 +131,11 @@ function exportSession(): void {
   background: var(--color-danger-soft);
   color: var(--color-danger);
   font-size: var(--font-sm);
+}
+
+.thread__notice--info {
+  border-top-color: var(--color-info);
+  background: var(--color-info-soft);
+  color: var(--color-info);
 }
 </style>

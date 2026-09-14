@@ -16,8 +16,9 @@ import type { AuthSession, LoginPayload } from '@/types/auth'
 export const USER_LOGIN_PATH = '/v1/users/userLogin'
 
 /**
- * 默认走真实后端；置 true 回到本地假数据（admin / admin）方便没有后端时演示。
- * 切换只改环境变量，业务代码不需要动。
+ * 切换只改环境变量，业务代码不需要动：开发默认 true（admin / admin 本地假数据，
+ * 因为后端登录还没修好 issue R20），生产默认 false 走真实后端。
+ * 值取自 src/constants/app.ts 的单一事实源，外壳组件读同一个开关不必引入整个 auth 模块。
  */
 export const IS_MOCK_AUTH: boolean = process.env.VUE_APP_MOCK_AUTH === 'true'
 
@@ -35,32 +36,59 @@ function asString(value: unknown): string {
 }
 
 /**
- * UserLoginRes 只声明了一个 userId（文档写 integer，后端实现把请求里的字符串原样回填，
- * 所以两种类型都要接住）。除此之外后端不发 token、不发角色、不发有效期。
+ * UserLoginRes.userId：文档写 integer，后端实现可能回填字符串，两种都接住。
  */
 function readUserId(data: unknown): string {
   return isRecord(data) ? asString(data.userId) : ''
 }
 
-/** mock 与真后端都用它兜底 token：后端签发真 token 前，请求层的 Bearer 只能带本地占位值。 */
-function createLocalToken(kind: 'mock' | 'local', username: string): string {
-  return `${kind}.${username}.${Date.now().toString(36)}`
+function readToken(data: unknown): string {
+  return isRecord(data) ? asString(data.token) : ''
+}
+
+/** mock 分支专用：真后端的 token 直接取 UserLoginRes.token。 */
+function createMockToken(username: string): string {
+  return `mock.${username}.${Date.now().toString(36)}`
 }
 
 /**
- * 把后端响应补齐成前端会话。后端没给有效期，expiresAt 置 null 表示本地不做过期判断
- * （utils/authSession.ts 与 stores/auth.ts 已按这个语义实现）。
- * username / displayName 用提交时的登录名回显，因为 UserLoginRes 里没有用户名字段。
+ * 只读 JWT 的 exp（RFC 7519 注册声明）换算本地过期时间，供「记住我」的过期清理用；
+ * 前端不校验签名，真过期仍由后端拒绝。解不出（不是三段式 / base64url 失败 / 无 exp）返回 null，
+ * 语义等同「后端没给有效期」：本地不做过期判断。
+ */
+function readJwtExpiresAt(token: string): number | null {
+  const segment = token.split('.')[1]
+  if (!segment) {
+    return null
+  }
+  try {
+    // atob 只给 latin-1 字节串；载荷里有中文用户名时要先还原成 UTF-8 再 JSON.parse
+    const binary = atob(segment.replace(/-/g, '+').replace(/_/g, '/'))
+    const parsed: unknown = JSON.parse(new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0))))
+    const claim = isRecord(parsed) ? parsed.exp : undefined
+    return typeof claim === 'number' ? claim * 1000 : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * UserLoginRes 只有 userId 与 token，没有用户名与角色：username / displayName 用提交时的登录名回显，
+ * roles 留空数组（当前 UI 不消费）。
  */
 function toSession(data: unknown, payload: LoginPayload): AuthSession {
-  const id = readUserId(data) || payload.username
+  const token = readToken(data)
+  if (!token) {
+    // 文档把 token 标成必填，拿不到就是契约被破坏；宁可报错也不要留一个必然失败的「已登录」态
+    throw new ApiError('登录响应缺少 token', { code: 'UNKNOWN', detail: data })
+  }
 
   return {
-    token: createLocalToken('local', payload.username),
+    token,
     issuedAt: Date.now(),
-    expiresAt: null,
+    expiresAt: readJwtExpiresAt(token),
     user: {
-      id,
+      id: readUserId(data) || payload.username,
       username: payload.username,
       displayName: payload.username,
       roles: []
@@ -94,14 +122,14 @@ async function loginWithMock(payload: LoginPayload, options: RequestOptions): Pr
   const matched = payload.username === MOCK_CREDENTIALS.username &&
     payload.password === MOCK_CREDENTIALS.password
   if (!matched) {
-    // 抛错形态对齐真实后端：全局处理器把业务异常包成 HTTP 200 + code 40001，经 unwrapEnvelope 后就是这个样子，
+    // 抛错形态对齐真实后端：全局处理器把业务异常包成 HTTP 200 + code 100001（ErrorCodes.USER_PASSWORD_ERROR），
     // 避免 mock 与真接口之间出现行为漂移。
-    throw new ApiError('用户名或密码错误', { status: 40001, code: 'BUSINESS_ERROR' })
+    throw new ApiError('用户名或密码错误', { status: 100001, code: 'BUSINESS_ERROR' })
   }
 
   const issuedAt = Date.now()
   return {
-    token: createLocalToken('mock', payload.username),
+    token: createMockToken(payload.username),
     issuedAt,
     expiresAt: issuedAt + MOCK_SESSION_TTL_MS,
     user: {
@@ -121,7 +149,7 @@ async function loginWithServer(payload: LoginPayload, options: RequestOptions): 
     body,
     { signal: options.signal }
   )
-  // HTTP 200 但 code != 200 也在这里抛 BUSINESS_ERROR
+  // HTTP 200 但 code != 0 也在这里抛 BUSINESS_ERROR（业务码 100001 / 校验码 40000 / 系统码 999999 都是这种形态）
   return toSession(unwrapEnvelope<unknown>(envelope, '登录失败'), payload)
 }
 

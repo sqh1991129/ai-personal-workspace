@@ -11,7 +11,6 @@ declare global {
       VUE_APP_DEV_PORT?: string
       VUE_APP_API_PROXY_TARGET?: string
       VUE_APP_MOCK_AUTH?: 'true' | 'false'
-      VUE_APP_MOCK_API?: 'true' | 'false'
     }
   }
 }

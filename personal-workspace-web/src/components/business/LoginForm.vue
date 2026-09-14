@@ -7,6 +7,8 @@ interface Props {
   pending?: boolean
   /** 服务端返回的失败原因（用户名密码错误、网络不可达等） */
   errorMessage?: string
+  /** 用户名输入框占位符：mock 模式给演示账号，真接口模式下由上层给中性文案，避免写死 admin 误导 */
+  usernamePlaceholder?: string
   /** 非空时展示「填入演示账号」提示，仅 mock 模式使用 */
   mockUsername?: string
   mockPassword?: string
@@ -15,6 +17,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   pending: false,
   errorMessage: '',
+  usernamePlaceholder: '请输入用户名',
   mockUsername: '',
   mockPassword: ''
 })
@@ -56,7 +59,7 @@ function fillMockCredentials(): void {
       name="username"
       label="用户名"
       autocomplete="username"
-      placeholder="admin"
+      :placeholder="usernamePlaceholder"
       autofocus
       required
       :disabled="pending"
@@ -192,23 +195,5 @@ function fillMockCredentials(): void {
 .login-form__fill:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 9px;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-sunken);
-  color: var(--color-muted);
-  font-size: var(--font-xs);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.pill--info {
-  background: var(--color-info-soft);
-  color: var(--color-info);
 }
 </style>

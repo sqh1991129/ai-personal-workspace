@@ -16,7 +16,7 @@ function questionTextOf(message: ChatMessage | undefined): string {
 }
 
 /**
- * 流式对话的编排：持有 AbortController，把 mock / SSE 的事件逐帧写进 stores/chat.ts。
+ * 流式对话的编排：持有 AbortController，把后端 SSE 的事件逐帧写进 stores/chat.ts。
  * 视图只消费 isStreaming / errorMessage；卸载时 onScopeDispose 必须 abort（原型 README 的同名约定）。
  */
 export function useChatStream() {
@@ -29,7 +29,7 @@ export function useChatStream() {
   const isStreaming = computed<boolean>(() => chatStore.isStreaming)
 
   /** withQuestion = true 时把提问也入列；「重新生成」复用原提问，不再重复入列 */
-  async function answer(question: string, deepThink: boolean, withQuestion: boolean): Promise<void> {
+  async function answer(question: string, withQuestion: boolean): Promise<void> {
     controller?.abort()
     errorMessage.value = ''
     if (withQuestion) {
@@ -41,24 +41,85 @@ export function useChatStream() {
     const abortController = new AbortController()
     controller = abortController
 
+    let targetText = ''
+    let currentText = ''
+    let isReplaceMode = false
+    let typeWriterTimer: ReturnType<typeof setInterval> | null = null
+
+    const syncTypeWriter = () => {
+      if (typeWriterTimer) {
+        clearInterval(typeWriterTimer)
+        typeWriterTimer = null
+      }
+      if (currentText !== targetText) {
+        if (isReplaceMode) {
+          chatStore.replaceText(messageId, targetText)
+        } else {
+          chatStore.appendText(messageId, targetText.slice(currentText.length))
+        }
+        currentText = targetText
+      }
+    }
+
+    const startTypeWriter = () => {
+      if (typeWriterTimer) return
+      typeWriterTimer = setInterval(() => {
+        if (currentText.length < targetText.length) {
+          const remain = targetText.length - currentText.length
+          const take = Math.max(1, Math.floor(remain / 4))
+          const nextText = targetText.slice(0, currentText.length + take)
+          
+          if (isReplaceMode) {
+            chatStore.replaceText(messageId, nextText)
+          } else {
+            chatStore.appendText(messageId, nextText.slice(currentText.length))
+          }
+          currentText = nextText
+        } else {
+          clearInterval(typeWriterTimer!)
+          typeWriterTimer = null
+        }
+      }, 30)
+    }
+
     try {
       await streamCompletion(
-        {
-          sessionId: chatStore.activeSessionId,
-          question,
-          kbIds: chatStore.params.selectedKbIds,
-          deepThink
-        },
+        question,
         {
           onThink: (think) => chatStore.setThink(messageId, think),
           onBlock: (block) => chatStore.pushBlock(messageId, block),
-          onAppendText: (text) => chatStore.appendText(messageId, text),
+          onAppendText: (text) => {
+            isReplaceMode = false
+            targetText += text
+            startTypeWriter()
+          },
+          onReplaceText: (text) => {
+            isReplaceMode = true
+            targetText = text
+            if (currentText.length > targetText.length) {
+              currentText = targetText
+              chatStore.replaceText(messageId, currentText)
+            }
+            startTypeWriter()
+          },
+          onComponent: (component, props) => {
+            // 组件替换无需打字机效果，直接上屏
+            if (typeWriterTimer) {
+              clearInterval(typeWriterTimer)
+              typeWriterTimer = null
+            }
+            chatStore.replaceWithComponent(messageId, component, props)
+          },
           onCitations: (citations) => chatStore.setCitations(messageId, citations),
-          onUsage: (usage) => chatStore.completeMessage(messageId, usage)
+          onUsage: (usage) => {
+            syncTypeWriter()
+            chatStore.completeMessage(messageId, usage)
+          }
         },
         { signal: abortController.signal }
       )
     } catch (error) {
+      syncTypeWriter()
       // 取消不是失败：stop() 已经把消息落成 stopped，这里不覆盖也不提示
       if (isApiError(error) && error.code === 'CANCELED') {
         return
@@ -72,8 +133,8 @@ export function useChatStream() {
     }
   }
 
-  function send(question: string, deepThink: boolean): void {
-    void answer(question, deepThink, true)
+  function send(question: string): void {
+    void answer(question, true)
   }
 
   /** 停止生成：保留已渲染部分并标注 stopped，对应原型的「已停止 · N tokens」 */
@@ -99,7 +160,7 @@ export function useChatStream() {
     if (index >= 0) {
       chatStore.dropMessage(message.id)
     }
-    void answer(question, message.think !== undefined, false)
+    void answer(question, false)
   }
 
   onScopeDispose(() => {

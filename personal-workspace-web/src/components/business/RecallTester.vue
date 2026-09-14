@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { shallowRef } from 'vue'
 import AppIcon from '@/components/base/AppIcon.vue'
+import { RECALL_QUERY_PLACEHOLDER } from '@/constants/knowledge'
 import { useRetrieval } from '@/composables/useRetrieval'
 import { useToastStore } from '@/stores/toast'
 
 const retrieval = useRetrieval()
 const toastStore = useToastStore()
-
-const hybrid = shallowRef(true)
-const rerank = shallowRef(true)
 
 function meterTone(score: number): string {
   if (score >= 0.8) {
@@ -20,7 +17,9 @@ function meterTone(score: number): string {
 async function run(): Promise<void> {
   await retrieval.run()
   const result = retrieval.result.value
-  toastStore.notify(result ? `已召回 ${result.hits.length} 个分片（模拟结果）` : '检索失败')
+  if (result) {
+    toastStore.notify(`已召回 ${result.hits.length} 个分片`)
+  }
 }
 </script>
 
@@ -37,7 +36,7 @@ async function run(): Promise<void> {
         class="input"
         type="search"
         aria-label="检索语句"
-        placeholder="输入一句自然语言，测试知识库召回质量"
+        :placeholder="RECALL_QUERY_PLACEHOLDER"
         @keyup.enter="run"
       />
       <button class="btn btn--primary" type="button" :disabled="retrieval.isPending.value" @click="run">
@@ -54,11 +53,21 @@ async function run(): Promise<void> {
         <span class="field__label">相似度阈值</span>
         <input v-model.number="retrieval.scoreThreshold.value" class="input" type="number" step="0.05" min="0" max="1" />
       </label>
-      <button class="tool-toggle" type="button" :aria-pressed="hybrid ? 'true' : 'false'" @click="hybrid = !hybrid">
+      <button
+        class="tool-toggle"
+        type="button"
+        :aria-pressed="retrieval.hybrid.value ? 'true' : 'false'"
+        @click="retrieval.hybrid.value = !retrieval.hybrid.value"
+      >
         <AppIcon name="db" size="sm" />向量 + BM25
       </button>
-      <button class="tool-toggle" type="button" :aria-pressed="rerank ? 'true' : 'false'" @click="rerank = !rerank">
-        <AppIcon name="bolt" size="sm" />bge-reranker
+      <button
+        class="tool-toggle"
+        type="button"
+        :aria-pressed="retrieval.rerank.value ? 'true' : 'false'"
+        @click="retrieval.rerank.value = !retrieval.rerank.value"
+      >
+        <AppIcon name="bolt" size="sm" />重排序
       </button>
     </div>
 

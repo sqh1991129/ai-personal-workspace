@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import AppIcon from '@/components/base/AppIcon.vue'
-import { INDEX_SERVICE } from '@/constants/knowledge'
 import type { KbSummary } from '@/types/knowledge'
 
 interface Props {
   libraries: KbSummary[]
   activeId: string
   loading: boolean
+  /** 列表拉取失败的原因（后端未实现时已点名端点） */
+  error?: string
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  error: ''
+})
 
 const emit = defineEmits<{
   open: [kbId: string]
@@ -41,6 +44,9 @@ function statusLabel(status: KbSummary['status']): { label: string; tone: string
     </div>
     <div class="rail__body">
       <p v-if="loading" class="rail__label">加载知识库…</p>
+      <p v-if="!loading && (error || libraries.length === 0)" class="empty">
+        {{ error || '后端尚未提供知识库列表（GET /api/kb），这里不会有数据。' }}
+      </p>
       <button
         v-for="library in libraries"
         :key="library.id"
@@ -58,34 +64,7 @@ function statusLabel(status: KbSummary['status']): { label: string; tone: string
       </button>
 
       <p class="rail__label">索引服务</p>
-      <div class="index-card">
-        <div class="cluster index-card__row">
-          <span class="text-sm">队列</span>
-          <span class="pill pill--info pill--no-dot">{{ INDEX_SERVICE.queueLabel }}</span>
-        </div>
-        <div class="meter"><div class="meter__fill meter__fill--info" :style="{ width: INDEX_SERVICE.progressPercent + '%' }" /></div>
-        <dl class="kv">
-          <dt>向量模型</dt><dd>{{ INDEX_SERVICE.embeddingModel }}</dd>
-          <dt>分片</dt><dd>{{ INDEX_SERVICE.chunkShape }}</dd>
-          <dt>磁盘</dt><dd>{{ INDEX_SERVICE.diskLabel }}</dd>
-        </dl>
-      </div>
+      <p class="empty">索引服务指标（队列 / 向量模型 / 磁盘）待后端提供</p>
     </div>
   </aside>
 </template>
-
-<style scoped>
-/* 原型这里是内联 style 的 card，这里换成类名，避免在模板里写 style */
-.index-card {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-}
-
-.index-card__row {
-  justify-content: space-between;
-}
-</style>

@@ -22,6 +22,41 @@ export function setAuthToken(token: string | null): void {
   authToken = token && token.length > 0 ? token : null
 }
 
+/**
+ * 少数端点走不了 axios（流式响应要自己读 ReadableStream），请求头在这里复用同一份 token，
+ * 避免「一处登录两处鉴权」。只给头，不给实例：调用方仍然是 src/api 下的领域模块。
+ */
+export function authHeaders(): Record<string, string> {
+  return authToken ? { [AUTH_HEADER]: `Bearer ${authToken}` } : {}
+}
+
+/** token 过期/无效时后端返回的标准状态码（FastAPI 的 HTTPException(401)）。 */
+export const HTTP_UNAUTHORIZED = 401
+
+/** 后端还没有这个路由（路由未注册时的 404），页面上要把它翻译成「某端点待对接」。 */
+export const HTTP_NOT_FOUND = 404
+
+export interface UnauthorizedContext {
+  /** 请求的相对路径（不含 baseURL），供装配处区分登录端点 */
+  url: string
+}
+
+export type UnauthorizedHandler = (context: UnauthorizedContext) => void
+
+// 请求层同样不反向依赖 store 与 router：它只上报「哪个端点回了 401」，
+// 清会话与跳转由 src/router/guards.ts 的 applyUnauthorizedRedirect() 装配。
+let unauthorizedHandler: UnauthorizedHandler | null = null
+
+/** 传 null 可注销（测试用）。handler 只做不抛错的副作用，异常会顶掉原始的 401 错误。 */
+export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): void {
+  unauthorizedHandler = handler
+}
+
+/** 非 axios 通道拿到的 401 也走同一套装配，避免「普通接口会踢回登录页、流式接口不会」。 */
+export function notifyUnauthorized(url: string): void {
+  unauthorizedHandler?.({ url })
+}
+
 export const API_ERROR_CODES = ['CANCELED', 'TIMEOUT', 'NETWORK', 'HTTP_ERROR', 'BUSINESS_ERROR', 'UNKNOWN'] as const
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number]
@@ -68,9 +103,12 @@ interface BackendErrorPayload {
   trace_id?: string
 }
 
-/** 后端统一响应报文，见 personal-workspace-app/core/base_response.py 与 docs/默认模块.md。 */
+/**
+ * 后端统一响应报文，见 personal-workspace-app/core/base_response.py 与 docs/默认模块.md。
+ * 成功码由 core/error_codes.py 的 ErrorCodes.SUCCESS 决定，是 **0**（不是 HTTP 的 200）。
+ */
 export interface ApiEnvelope<T> {
-  /** 业务状态码，200 表示成功 */
+  /** 业务状态码，0 表示成功；非 0 时 message 已是可直接展示中文文案 */
   code?: number
   message?: string
   data?: T
@@ -78,6 +116,9 @@ export interface ApiEnvelope<T> {
   trace_id?: string
   timestamp?: number
 }
+
+/** 后端 ErrorCodes.SUCCESS.code（error_codes.py 里写成 000000，即十进制 0）。 */
+export const API_SUCCESS_CODE = 0
 
 /** 后端返回体一律先按未知处理，再用这种守卫收窄（AGENTS.md 的 TypeScript 约定）。 */
 export function isRecord(value: unknown): value is Record<string, unknown> {
@@ -90,7 +131,7 @@ export function isApiEnvelope(value: unknown): value is ApiEnvelope<unknown> {
 }
 
 /**
- * 拆 BaseResponse 信封。HTTP 200 但 code != 200 同样是失败（后端用 BaseResponse.failure 表达），
+ * 拆 BaseResponse 信封。HTTP 200 但 code != 0 同样是失败（后端用 BaseResponse.failure 表达），
  * 归一化成 BUSINESS_ERROR，调用方仍然只 catch ApiError。
  * data 由 unknown → T 是边界断言：具体契约由各领域模块的 Raw* 类型收敛（AGENTS.md 约定）。
  */
@@ -98,7 +139,7 @@ export function unwrapEnvelope<T>(payload: unknown, fallbackMessage: string): T 
   if (!isApiEnvelope(payload)) {
     throw new ApiError(`${fallbackMessage}：响应不是约定的 BaseResponse 报文`, { code: 'UNKNOWN', detail: payload })
   }
-  if (payload.code !== 200) {
+  if (payload.code !== API_SUCCESS_CODE) {
     throw new ApiError(payload.message || fallbackMessage, {
       status: payload.code,
       code: 'BUSINESS_ERROR',
@@ -153,6 +194,16 @@ function readRequestId(error: AxiosError<BackendErrorPayload>): string {
   return typeof value === 'string' ? value : ''
 }
 
+/**
+ * 404 的文案必须点名端点：后端没实现的功能在页面上要能直接看出「是哪个接口没接」，
+ * 而不是笼统一句 HTTP 404，否则使用者无从判断哪些功能还依赖后台对接。
+ */
+function readUnimplementedMessage(error: AxiosError<BackendErrorPayload>): string {
+  const verb = String(error.config?.method ?? 'get').toUpperCase()
+  const path = `${API_BASE_URL}${String(error.config?.url ?? '')}`
+  return `后端未实现 ${verb} ${path}，该功能待对接`
+}
+
 const instance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: REQUEST_TIMEOUT,
@@ -186,9 +237,15 @@ instance.interceptors.response.use(
       return Promise.reject(new ApiError(`无法连接后端服务（${API_BASE_URL}）`, { code: 'NETWORK', requestId }))
     }
 
+    if (response.status === HTTP_UNAUTHORIZED) {
+      unauthorizedHandler?.({ url: String(axiosError.config?.url ?? '') })
+    }
+
     const payload = response.data ?? null
     const fallback = `后端返回 HTTP ${response.status}`
-    const message = readValidationMessage(response.data) || payload?.message || payload?.error || fallback
+    const message = response.status === HTTP_NOT_FOUND
+      ? readUnimplementedMessage(axiosError)
+      : readValidationMessage(response.data) || payload?.message || payload?.error || fallback
     const rawCode: unknown = payload?.code
     // 后端回了 trace_id 就以它为准，方便和后端日志对齐；否则退回我们发出的 X-Request-Id
 

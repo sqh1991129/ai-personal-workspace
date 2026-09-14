@@ -7,9 +7,13 @@ interface Props {
   activeId: string
   filter: string
   loading: boolean
+  /** 列表拉取失败的原因（后端未实现时已点名端点）；空串表示没有错误 */
+  error?: string
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  error: ''
+})
 
 const emit = defineEmits<{
   open: [sessionId: string]
@@ -56,7 +60,9 @@ const emit = defineEmits<{
           <span class="nav-item__count">{{ session.timeLabel }}</span>
         </button>
       </template>
-      <p v-if="!loading && groups.length === 0" class="empty">没有匹配的会话，换个关键词试试。</p>
+      <p v-if="!loading && groups.length === 0" class="empty">
+        {{ error || (filter ? '没有匹配的会话，换个关键词试试。' : '后端尚未提供会话列表（GET /api/v1/chat/sessions），这里不会有历史会话。') }}
+      </p>
     </div>
   </aside>
 </template>

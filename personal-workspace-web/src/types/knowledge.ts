@@ -62,10 +62,3 @@ export interface RecallResult {
   embeddingModel: string
   hits: RecallHit[]
 }
-
-export interface UploadTask {
-  id: string
-  fileName: string
-  progress: number
-  status: DocumentStatus
-}

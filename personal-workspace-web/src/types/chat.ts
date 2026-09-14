@@ -1,5 +1,6 @@
-// 对话模块的数据契约。后端未实现（docs issue R10），这里按前端渲染需要的形状定义，
-// 流式落地后再按 SSE 的 delta/usage/citations 结构收紧（见 demo/chat.html 的接口约定段）。
+// 对话模块的数据契约。后端目前只有 POST /api/v1/chat/streamChat（帧里只带文本，
+// 没有 think / citations / usage），所以 think、citations、tokens 这几个字段
+// 现在恒为空，界面上按「有没有值」决定是否展示（issue R21）。
 import type { IconName } from '@/constants/icons'
 
 /** 消息正文块：结构化描述，避免对假数据/后端文本使用 v-html */
@@ -8,6 +9,7 @@ export type MessageBlock =
   | { kind: 'heading'; text: string }
   | { kind: 'list'; ordered: boolean; items: string[] }
   | { kind: 'code'; language: string; filename: string; code: string }
+  | { kind: 'component'; component: string; props: Record<string, unknown> }
 
 export type ChatRole = 'user' | 'assistant'
 
@@ -29,8 +31,8 @@ export interface ChatMessage {
   citations: ChatCitation[]
   tokens?: number
   elapsedMs?: number
-  /** status = 'stopped' 时已生成的 token 数，用于「38 / 260 tokens」标注 */
-  stoppedTokens?: number
+  /** status = 'stopped' 时本地按已渲染块统计的字符数（后端不返回 token 用量，不冒充 token 数） */
+  stoppedChars?: number
   error?: string
   timeLabel: string
 }
@@ -49,22 +51,11 @@ export interface ChatSession {
 }
 
 export interface ChatParams {
-  modelId: string
   temperature: number
   maxOutputTokens: number
   systemPrompt: string
   topK: number
   scoreThreshold: number
-  reranker: string
   /** 参与召回的知识库 id，来自 stores/knowledge.ts */
   selectedKbIds: string[]
-}
-
-export interface ChatDraft {
-  blocks: MessageBlock[]
-  think: string
-  thinkSeconds: number
-  citations: ChatCitation[]
-  tokens: number
-  elapsedMs: number
 }

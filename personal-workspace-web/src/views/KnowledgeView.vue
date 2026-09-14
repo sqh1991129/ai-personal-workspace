@@ -21,6 +21,7 @@ const toastStore = useToastStore()
 
 const layout = computed(() => appStore.layouts.knowledge)
 const metrics = computed(() => knowledgeStore.libraryMetrics)
+
 const activeDocument = computed(() => knowledgeStore.activeDocument)
 const drawerStatus = computed(() => {
   const status = activeDocument.value?.status
@@ -62,18 +63,14 @@ async function openDocument(documentId: string): Promise<void> {
   await knowledgeStore.openDocument(documentId)
 }
 
-function createLibrary(): void {
-  knowledgeStore.createLibrary(`我的知识库 · ${knowledgeStore.libraries.length + 1}`)
-  toastStore.notify('已创建知识库（本地），上传文档后建立索引')
-}
-
 async function reindex(): Promise<void> {
   const doc = activeDocument.value
   if (!doc) {
     return
   }
-  await knowledgeStore.reindex(doc.id)
-  toastStore.notify(`${doc.name} 已重新排队索引`)
+  if (await knowledgeStore.reindex(doc.id)) {
+    toastStore.notify(`${doc.name} 已重新排队索引`)
+  }
 }
 
 async function removeDoc(): Promise<void> {
@@ -81,12 +78,18 @@ async function removeDoc(): Promise<void> {
   if (!doc) {
     return
   }
-  await knowledgeStore.removeDoc(doc.id)
-  toastStore.notify(`已移除 ${doc.name}`)
+  if (await knowledgeStore.removeDoc(doc.id)) {
+    toastStore.notify(`已移除 ${doc.name}`)
+  }
 }
 
 function setStatusFilter(value: 'all' | DocumentStatus): void {
   knowledgeStore.setStatusFilter(value)
+}
+
+/** 后端没有创建库的端点，点了只说明缺口，不在本地造一个假的库进列表 */
+function createLibraryPending(): void {
+  toastStore.notify('创建知识库待后端实现：POST /api/kb')
 }
 </script>
 
@@ -96,15 +99,16 @@ function setStatusFilter(value: 'all' | DocumentStatus): void {
       :libraries="knowledgeStore.libraries"
       :active-id="knowledgeStore.activeKbId"
       :loading="knowledgeStore.loadingLibraries"
+      :error="knowledgeStore.listError"
       @open="openLibrary"
-      @create="createLibrary"
+      @create="createLibraryPending"
     />
 
     <div class="kb-main">
       <div class="kb-head">
         <div class="kb-head__top">
           <h2>{{ knowledgeStore.activeLibrary?.name ?? '知识库' }}</h2>
-          <span class="pill pill--success">已启用检索</span>
+          <span class="pill pill--danger">检索待对接</span>
           <span class="topbar__spacer" />
           <button class="btn btn--sm" type="button" @click="reindex">
             <AppIcon name="refresh" size="sm" />重建索引
@@ -122,7 +126,7 @@ function setStatusFilter(value: 'all' | DocumentStatus): void {
           <span>分片 <b>{{ metrics.chunkCount }}</b></span>
           <span>已索引 <b>{{ metrics.readyLabel }}</b></span>
           <span>最近更新 <b>{{ knowledgeStore.visibleDocuments[0]?.updatedAtLabel ?? '—' }}</b></span>
-          <span>对话可引用 <b>是</b></span>
+          <span>对话可引用 <b>待对接</b></span>
         </div>
       </div>
 
@@ -135,6 +139,7 @@ function setStatusFilter(value: 'all' | DocumentStatus): void {
             :active-document-id="knowledgeStore.activeDocumentId"
             :status-filter="knowledgeStore.statusFilter"
             :loading="knowledgeStore.loadingDocuments"
+            :error="knowledgeStore.listError"
             @open="openDocument"
             @update:status-filter="setStatusFilter"
           />
@@ -152,16 +157,14 @@ function setStatusFilter(value: 'all' | DocumentStatus): void {
     >
       <div class="cluster">
         <span v-if="drawerStatus" class="pill" :class="`pill--${drawerStatus.tone}`">{{ drawerStatus.label }}</span>
-        <span class="chip pill--no-dot">{{ activeDocument?.type ?? '—' }} · 分片 512/64</span>
-        <span class="chip pill--no-dot pill--info">对话可引用</span>
+        <span class="chip pill--no-dot">{{ activeDocument?.type ?? '—' }}</span>
       </div>
       <dl class="kv">
-        <dt>来源</dt><dd>本地文件</dd>
         <dt>大小</dt><dd>{{ activeDocument?.sizeLabel ?? '—' }}</dd>
         <dt>分片数</dt><dd>{{ activeDocument?.chunkCount ?? '—' }}</dd>
-        <dt>向量模型</dt><dd>{{ activeDocument?.embeddingModel ?? '—' }} · 1024 维</dd>
+        <dt>向量模型</dt><dd>{{ activeDocument?.embeddingModel || '—' }}</dd>
         <dt>更新时间</dt><dd>{{ activeDocument?.updatedAtLabel ?? '—' }}</dd>
-        <dt>被引用次数</dt><dd>{{ activeDocument?.citedTimes ?? 0 }} 次 / {{ activeDocument?.citedSessions ?? 0 }} 个会话</dd>
+        <dt>被引用</dt><dd>{{ activeDocument?.citedTimes ?? '—' }} 次 / {{ activeDocument?.citedSessions ?? '—' }} 个会话</dd>
       </dl>
       <div class="cluster">
         <button class="btn btn--sm" type="button" @click="toastStore.notify('原文预览待后端 /documents/{id}/preview 就绪')">

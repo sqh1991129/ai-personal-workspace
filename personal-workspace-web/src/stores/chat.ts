@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
-import { deleteSession, fetchMessages, fetchSessions, CHAT_COMPLETIONS_PATH } from '@/api/chat'
+import { deleteSession, fetchMessages, fetchSessions, type CompletionUsage } from '@/api/chat'
 import { NEW_SESSION_ID, SESSION_GROUP_ORDER } from '@/constants/chat'
-import { DEFAULT_SELECTED_KB_IDS } from '@/constants/knowledge'
 import type { ChatCitation, ChatMessage, ChatParams, ChatSession } from '@/types/chat'
 import type { MessageBlock } from '@/types/chat'
 
@@ -34,14 +33,13 @@ function nowLabel(): string {
 }
 
 const DEFAULT_PARAMS: ChatParams = {
-  modelId: 'WS-14B · 本地 GGUF（Q4_K_M）',
   temperature: 0.7,
   maxOutputTokens: 2048,
   systemPrompt: '你是个人工作台助手。回答用中文，先给结论再给步骤；引用知识库时必须标注来源文件名；不确定时明确说明，不要编造。',
   topK: 3,
   scoreThreshold: 0.55,
-  reranker: 'bge-reranker',
-  selectedKbIds: [...DEFAULT_SELECTED_KB_IDS]
+  // 后端没有「列出知识库」的接口，这里就没有默认勾选：空数组 = 界面上知识来源为空
+  selectedKbIds: []
 }
 
 export const useChatStore = defineStore('chat', {
@@ -84,20 +82,6 @@ export const useChatStore = defineStore('chat', {
       }, [])
     },
     isStreaming: (state): boolean => state.streamingMessageId !== null,
-    /** 上下文占用：粗粒度估算，供参数面板的 meter 使用 */
-    contextUsage: (state): { usedLabel: string; windowLabel: string; percent: number } => {
-      const chars = Object.values(state.messagesBySession)
-        .flat()
-        .reduce((sum, message) => sum + message.blocks.reduce((inner, block) => inner + blockTextLength(block), 0), 0)
-      const tokens = Math.round(chars / 2)
-      const windowSize = 32_000
-      return {
-        usedLabel: tokens >= 1000 ? `${(tokens / 1000).toFixed(1)}k` : String(tokens),
-        windowLabel: `${windowSize / 1000}k`,
-        percent: Math.min(100, Math.round((tokens / windowSize) * 100))
-      }
-    },
-    completionPath: (): string => CHAT_COMPLETIONS_PATH
   },
   actions: {
     async loadSessions(signal?: AbortSignal): Promise<void> {
@@ -187,6 +171,21 @@ export const useChatStore = defineStore('chat', {
         message.blocks = [...message.blocks, { kind: 'paragraph', text }]
       })
     },
+    replaceText(messageId: string, text: string): void {
+      this.updateStreaming(messageId, (message) => {
+        const last = message.blocks[message.blocks.length - 1]
+        if (last && last.kind === 'paragraph') {
+          message.blocks = [...message.blocks.slice(0, -1), { kind: 'paragraph', text }]
+          return
+        }
+        message.blocks = [...message.blocks, { kind: 'paragraph', text }]
+      })
+    },
+    replaceWithComponent(messageId: string, component: string, props: Record<string, unknown>): void {
+      this.updateStreaming(messageId, (message) => {
+        message.blocks = [{ kind: 'component', component, props }]
+      })
+    },
     setThink(messageId: string, think: { seconds: number; text: string }): void {
       this.updateStreaming(messageId, (message) => {
         message.think = think
@@ -197,10 +196,11 @@ export const useChatStore = defineStore('chat', {
         message.citations = citations
       })
     },
-    completeMessage(messageId: string, usage: { tokens: number; elapsedMs: number }): void {
+    /** tokens 为 null = 后端没返回用量统计，界面上就不该出现「N tokens」（AGENTS.md：不留无来源数字） */
+    completeMessage(messageId: string, usage: CompletionUsage): void {
       this.updateStreaming(messageId, (message) => {
         message.status = 'done'
-        message.tokens = usage.tokens
+        message.tokens = usage.tokens ?? undefined
         message.elapsedMs = usage.elapsedMs
       })
       this.streamingMessageId = null
@@ -209,7 +209,7 @@ export const useChatStore = defineStore('chat', {
     stopMessage(messageId: string): void {
       this.updateStreaming(messageId, (message) => {
         message.status = 'stopped'
-        message.stoppedTokens = message.blocks.reduce((sum, block) => sum + blockTextLength(block), 0)
+        message.stoppedChars = message.blocks.reduce((sum, block) => sum + blockTextLength(block), 0)
       })
       this.streamingMessageId = null
     },
@@ -224,9 +224,6 @@ export const useChatStore = defineStore('chat', {
     dropMessage(messageId: string): void {
       const list = this.messagesBySession[this.activeSessionId] ?? []
       this.messagesBySession[this.activeSessionId] = list.filter((message) => message.id !== messageId)
-    },
-    setModel(modelId: string): void {
-      this.params.modelId = modelId
     },
     setTemperature(temperature: number): void {
       this.params.temperature = temperature
@@ -256,6 +253,8 @@ export const useChatStore = defineStore('chat', {
         await deleteSession(sessionId, { signal })
       } catch (error) {
         this.listError = describeError(error)
+        // 真接口删失败就不动本地列表：否则界面显示「已删除」而后端还在，比报错更糟
+        return
       }
       this.sessions = this.sessions.filter((session) => session.id !== sessionId)
       if (this.activeSessionId === sessionId) {
@@ -275,6 +274,8 @@ function blockTextLength(block: MessageBlock): number {
       return block.items.reduce((sum, item) => sum + item.length, 0)
     case 'code':
       return block.code.length
+    case 'component':
+      return JSON.stringify(block.props).length
     default:
       return 0
   }

@@ -3,7 +3,7 @@
  * 每个模块以 [data-module] 为作用域前缀，因此不污染全局；
  * 对应 views/HomeView.vue、views/ChatView.vue、views/KnowledgeView.vue。
  * 视图组件渲染与原型一致的 DOM，图标改由 components/base/AppIcon.vue 输出，
- * 交互与假数据由 stores/ 与 composables/ 驱动。
+ * 交互与数据加载由 stores/ 与 composables/ 驱动（数据只有后端来源，工程内不内置示例）。
  * ========================================================================== */
 /* ==========================================================================
  * 模块一：工作台总览（index.html）
@@ -63,6 +63,8 @@
   gap: var(--space-3);
 }
 
+/* 指标卡与迷你折线：与 demo/assets/modules.css 逐字一致，供 components/base/StatCard.vue 使用。
+ * 原型里裸 .stat 没有规则，容器由 .card 负责，这里也不补。 */
 .stat__value {
   display: flex;
   align-items: baseline;
@@ -107,14 +109,6 @@
 .spark polygon {
   fill: var(--color-accent-soft);
   stroke: none;
-}
-
-.mini-list {
-  display: grid;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 .kv {
@@ -212,43 +206,6 @@
   margin: 0;
   font-size: var(--font-xl);
   font-weight: 600;
-}
-
-.checklist li {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: 6px 0;
-}
-
-.tick {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  margin-top: 3px;
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface);
-  color: transparent;
-  font-size: 11px;
-}
-
-.tick.is-done {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-}
-
-.checklist li:has(.tick:not(.is-done)) .row__title {
-  color: var(--color-text);
-}
-
-.checklist li:has(.tick.is-done) .row__title {
-  color: var(--color-muted);
-  text-decoration: line-through;
-  text-decoration-color: var(--color-border);
 }
 
 .swatches {
@@ -695,39 +652,6 @@
   font-size: var(--font-xl);
 }
 
-.suggestions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-2);
-  width: 100%;
-}
-
-.suggestions button {
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-size: var(--font-sm);
-  text-align: left;
-}
-
-.suggestions button:hover {
-  border-color: var(--color-accent);
-  background: var(--color-accent-soft);
-}
-
-.suggestions strong {
-  display: block;
-  margin-bottom: 4px;
-  font-size: var(--font-md);
-}
-
-.suggestions span {
-  color: var(--color-muted);
-  font-size: var(--font-xs);
-}
-
 /* ==========================================================================
  * 模块三：知识库（knowledge.html）
  * ========================================================================== */
@@ -819,23 +743,6 @@
 .dropzone strong {
   color: var(--color-text);
   font-size: var(--font-md);
-}
-
-.uploader {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.uploader__item {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: var(--space-2) var(--space-3);
-  align-items: center;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  font-size: var(--font-sm);
 }
 
 .table {

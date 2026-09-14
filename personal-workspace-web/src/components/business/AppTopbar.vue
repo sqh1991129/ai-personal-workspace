@@ -3,6 +3,7 @@ import { computed, onMounted, onScopeDispose, useTemplateRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/base/AppIcon.vue'
 import ThemeToggle from '@/components/business/ThemeToggle.vue'
+import { IS_MOCK_AUTH } from '@/constants/app'
 import { useAppStore } from '@/stores/app'
 import { useChatStore } from '@/stores/chat'
 import { useKnowledgeStore } from '@/stores/knowledge'
@@ -29,6 +30,19 @@ const LAYOUT_LABELS: Record<LayoutName, string> = {
   'two-col': '两栏',
   'one-col': '专注'
 }
+
+interface MockBadge {
+  label: string
+  note: string
+}
+
+/**
+ * 业务数据已经没有假数据分支，只剩登录还是本地校验；这个开关是构建期注入的，
+ * 改了 .env 不重启就还是旧值，所以必须在顶栏自报家门（issue R21）。
+ */
+const MOCK_BADGES: MockBadge[] = IS_MOCK_AUTH
+  ? [{ label: '演示登录', note: 'VUE_APP_MOCK_AUTH=true：登录在本地校验（admin / admin），没有请求后端。' }]
+  : []
 
 const layoutOptions = computed<LayoutName[]>(() => {
   if (props.module === 'chat') {
@@ -103,6 +117,11 @@ watch(
       <h1>{{ title }}</h1>
       <p>{{ viewPath }}</p>
     </div>
+    <span v-if="MOCK_BADGES.length" class="topbar__mock">
+      <span v-for="badge in MOCK_BADGES" :key="badge.label" class="pill pill--warning pill--no-dot" :title="badge.note">
+        {{ badge.label }}
+      </span>
+    </span>
     <span class="topbar__spacer" />
     <div v-if="module" class="segmented" role="tablist" aria-label="布局切换">
       <button
@@ -134,3 +153,13 @@ watch(
     <ThemeToggle />
   </header>
 </template>
+
+<style scoped>
+.topbar__mock {
+  display: flex;
+  flex: none;
+  gap: var(--space-1);
+  align-items: center;
+  margin-left: var(--space-2);
+}
+</style>

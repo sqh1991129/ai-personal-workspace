@@ -10,9 +10,13 @@ interface Props {
   activeDocumentId: string | null
   statusFilter: 'all' | DocumentStatus
   loading: boolean
+  /** 拉取失败的原因（后端未实现时已点名端点） */
+  error?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  error: ''
+})
 
 const emit = defineEmits<{
   open: [documentId: string]
@@ -79,7 +83,7 @@ const filterLabel = computed<string>(() =>
       </div>
       <p v-if="loading" class="empty">加载文档…</p>
       <p v-else-if="documents.length === 0" class="empty">
-        <AppIcon name="search" />没有匹配的文档，试试更换关键词或状态筛选。
+        <AppIcon name="search" />{{ props.error || '没有匹配的文档，试试更换关键词或状态筛选。' }}
       </p>
     </div>
     <p class="card__hint">

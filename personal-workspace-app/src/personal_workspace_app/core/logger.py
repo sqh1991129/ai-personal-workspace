@@ -15,15 +15,19 @@ class InterceptHandler(logging.Handler):
     """接管标准 logging 模块（如 uvicorn, sqlalchemy）的日志输出到 Loguru"""
 
     def emit(self, record):
+        # 获取对应的 Loguru 日志级别
         try:
             level = logger.level(record.levelname).name
         except ValueError:
             level = record.levelno
-        frame, depth = logging.currentframe, 2
+            # 查找日志调用的实际帧 depth (必须调用 function: logging.currentframe())
+        frame = logging.currentframe()
+        depth = 2
         while frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
             depth += 1
-        logger.opt(depth=depth, exception=record.exc_info).log()
+        # 将标准日志重定向到 Loguru
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
 def trace_id_patcher(record):
